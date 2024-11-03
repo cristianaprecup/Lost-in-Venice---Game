@@ -12,7 +12,7 @@ int main(void)
 		return -1; // if the library is not initialized, return -1 and close the program
 
 	// create the window with the size and the title Lost in Venice
-    window = glfwCreateWindow(1920, 1080, "Lost in Venice", NULL, NULL);
+    window = glfwCreateWindow(450, 432, "Lost in Venice", NULL, NULL);
     if (!window)
     {
 		glfwTerminate(); // if the window cannot be created close the program
