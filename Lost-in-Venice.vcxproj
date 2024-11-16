@@ -149,8 +149,8 @@
     <None Include="SimpleVertexShader.vertexshader" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="background.png" />
     <Image Include="res\background.jpg" />
+    <Image Include="res\background.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
