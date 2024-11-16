@@ -22,7 +22,7 @@
 
 // global variables
 GLFWwindow* window;
-const int width = 2000, height = 2024;
+const int width = 1024, height = 1024;
 
 glm::vec3 squarePosition(0.0f, 0.0f, 0.0f); //track the position of the square
 glm::vec3 staticSquarePosition(2.0f, 3.0f, 0.0f);
