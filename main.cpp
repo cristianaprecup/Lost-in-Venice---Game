@@ -22,61 +22,25 @@
 
 // global variables
 GLFWwindow* window;
-const int width = 1100, height = 1100;
+const int width = 2000, height = 2024;
 
 glm::vec3 squarePosition(0.0f, 0.0f, 0.0f); //track the position of the square
 glm::vec3 staticSquarePosition(2.0f, 3.0f, 0.0f);
-const float squareSpeed = 0.0007f; // speed of the square
+const float squareSpeed = 0.005f; // speed of the square
 
 // positions of the squares 
 glm::vec3 positions[] = {
-    glm::vec3(-0.53f, 0.8f, 0.0f),  //1
-    glm::vec3(-0.35f, 0.8f, 0.0f),
-    glm::vec3(-0.53f, 0.7f, 0.0f),
-    glm::vec3(-0.35f, 0.7f, 0.0f),
-
-    glm::vec3(-0.55f, 0.3f, 0.0f),  //2
-    glm::vec3(-0.55f, 0.38f, 0.0f),
-    glm::vec3(-0.35f, 0.3f, 0.0f),
-    glm::vec3(-0.35f, 0.38f, 0.0f),
-
-    glm::vec3(-0.6f, 0.08f, 0.0f),  //3
-    glm::vec3(-0.6f, 0.05f, 0.0f),
-
-    glm::vec3(-0.87f, 0.88f, 0.0f),  //4
-
-    glm::vec3(-0.78f, 0.52f, 0.0f),  //5
-    glm::vec3(-0.78f, 0.46f, 0.0f),
-    glm::vec3(-0.9f, 0.52f, 0.0f),
-    glm::vec3(-0.9f, 0.46f, 0.0f),
-
-    glm::vec3(-0.9f, 0.27f, 0.0f),   //6
-
-    glm::vec3(-0.87f, 0.05f, 0.0f),  //7
-
-    glm::vec3(-0.86f, 0.0f, 0.0f),   //8
-
-    glm::vec3(-0.85f, -0.4f, 0.0f),  //9
-    glm::vec3(-0.85f, -0.48f, 0.0f),
-
-    glm::vec3(-0.95f, -0.7f, 0.0f),   //10
-    glm::vec3(-0.95f, -0.8f, 0.0f),
-
-    glm::vec3(-0.88f, -0.88f, 0.0f),   //11
-
-    glm::vec3(-0.27f, -0.09f, 0.0f), //12
-
-    glm::vec3(-0.27f, -0.35f, 0.0f),  //13
-
-    glm::vec3(-0.37f, -0.08f, 0.0f), //14
-    glm::vec3(-0.4f, -0.2f, 0.0f),
-    glm::vec3(-0.4f, -0.35f, 0.0f),
-
-  
+    glm::vec3(0.0f, 0.0f, 0.0f),
+    glm::vec3(0.2f, 0.5f, 0.0f),
+    glm::vec3(-0.15f, -0.22f, 0.0f),
+    glm::vec3(-0.38f, -0.2f, 0.0f),
+    glm::vec3(0.24f, -0.4f, 0.0f),
+    glm::vec3(-0.17f, 0.3f, 0.0f),
+    glm::vec3(0.93f, -0.2f, 0.0f),
+    glm::vec3(0.15f, 0.2f, 0.0f),
+    glm::vec3(0.15f, 0.7f, 0.0f),
+    glm::vec3(-0.13f, 0.1f, 0.0f)
 };
-
-
-
 
 // function to load the background texture
 GLuint loadTexture(const char* filepath) {
@@ -105,42 +69,18 @@ GLuint loadTexture(const char* filepath) {
     return texture;
 }
 
-bool checkCollision(const glm::vec3& playerPos, const glm::vec3& staticPos, float size) {
-    float halfSize = size / 2.0f;
 
-    // Check if the player's square intersects with the static square
-    return (playerPos.x + halfSize > staticPos.x - halfSize &&
-        playerPos.x - halfSize < staticPos.x + halfSize &&
-        playerPos.y + halfSize > staticPos.y - halfSize &&
-        playerPos.y - halfSize < staticPos.y + halfSize);
-}
-
-
-
+// function to process the movements of the square
 void processMovements(GLFWwindow* window) {
-    glm::vec3 newPosition = squarePosition; // Store the player's current position
-
-    // Update the position based on key input
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        newPosition.y += squareSpeed;
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)  
+		squarePosition.y += squareSpeed; // move the square up by incrementing the y position 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        newPosition.y -= squareSpeed;
+        squarePosition.y -= squareSpeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        newPosition.x += squareSpeed;
+        squarePosition.x += squareSpeed;
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        newPosition.x -= squareSpeed;
-
-    // Check for collisions with all static squares
-    for (const auto& staticPos : positions) {
-        if (checkCollision(newPosition, staticPos, 0.1f)) { // Assuming square size is 0.1
-            return; // Cancel movement if there's a collision
-        }
-    }
-
-    // If no collisions, update the player's position
-    squarePosition = newPosition;
+        squarePosition.x -= squareSpeed;
 }
-
 
 int main(void)
 {
@@ -177,22 +117,20 @@ int main(void)
 
     glViewport(0, 0, width, height);
 
-
-
     float quadVertices[] = {
         // positions      // texture coords
-        -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+        -1.0f,  1.0f, 0.0f,  0.0f, 1.0f, 
         -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
-         1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
-         1.0f,  1.0f, 0.0f,  1.0f, 1.0f
+         1.0f, -1.0f, 0.0f,  1.0f, 0.0f, 
+         1.0f,  1.0f, 0.0f,  1.0f, 1.0f  
     };
 
     unsigned int quadIndices[] = {
-        0, 1, 2,
-        0, 2, 3
+        0, 1, 2, 
+        0, 2, 3  
     };
 
-    // VAO, VBO, EBO for the background
+	// VAO, VBO, EBO for the background
     GLuint quadVAO, quadVBO, quadEBO;
     glGenVertexArrays(1, &quadVAO);
     glGenBuffers(1, &quadVBO);
@@ -211,7 +149,7 @@ int main(void)
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    // vertices are used to define the shape of the square and indices are used to define the order in which the vertices are rendered
+	// vertices are used to define the shape of the square and indices are used to define the order in which the vertices are rendered
     float vertices_main_square[] = {
         0.05f,  0.05f, 0.0f,  // top right
         0.05f, -0.05f, 0.0f,  // bottom right
@@ -219,12 +157,12 @@ int main(void)
         -0.05f,  0.05f, 0.0f   // top left 
     };
 
-    unsigned int indices_main_square[] = {
-        0, 1, 3,
-        1, 2, 3
-    };
+    unsigned int indices_main_square[] = {  
+		0, 1, 3,  
+		1, 2, 3   
+	};
 
-    GLuint VAO, VBO, EBO;
+    GLuint VAO, VBO, EBO; 
 
     glGenVertexArrays(1, &VAO); //generates one VAO and stores its ID in the variable VAO
     glGenBuffers(1, &VBO);
@@ -237,7 +175,7 @@ int main(void)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices_main_square), indices_main_square, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // specifies how the vertex data is structured
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // specifies how the vertex data is structured
     glEnableVertexAttribArray(0);
 
     GLuint backgroundShader = LoadShaders("BackgroundVertexShader.vertexshader", "BackgroundFragmentShader.fragmentshader");
@@ -274,34 +212,26 @@ int main(void)
 
         processMovements(window);
 
-        // Render the square
-        glUseProgram(programID); //the shader program is used for rendering the square
+		glUseProgram(programID); //the shader program is used for rendering the square
 
-        // Create a transformation matrix and translate the square
-        glm::mat4 transform = glm::mat4(1.0f); // identity matrix
-        transform = glm::translate(transform, squarePosition); // move square to new position
+		glm::mat4 transform = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first of 1.0f
+		transform = glm::translate(transform, squarePosition); // translate the square to the new position
 
-        // Apply scaling to the mobile square (player square)
-        transform = glm::scale(transform, glm::vec3(0.4f, 0.4f, 0.8f)); // scale down the mobile square
-
-        // get the location of the transform matrix in the shader program
-        unsigned int transformLoc = glGetUniformLocation(programID, "transform");
-        // pass the transform matrix to the shader program using the glUniformMatrix4fv function
+		// get the location of the transform matrix in the shader program
+        unsigned int transformLoc = glGetUniformLocation(programID  , "transform"); 
+		// pass the transform matrix to the shader program using the glUniformMatrix4fv function
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
 
-        // Draw the mobile square (player)
+        // Draw the square
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-
-        //for (int i = 0; i < 10; i++) {                                       //do not delete!!! (hidden squares)
-        //    glm::mat4 transform = glm::mat4(1.0f);
-        //    transform = glm::translate(transform, positions[i]);
-        //    transform = glm::scale(transform, glm::vec3(1.8f, 1.2f, 1.0f)); // Scale static squares
-        //    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
-        //    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        //}
-
+		for (int i = 0; i < 10; i++) {
+			glm::mat4 transform = glm::mat4(1.0f);
+			transform = glm::translate(transform, positions[i]);
+			glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		}
 
     }
 
