@@ -1,4 +1,4 @@
-// Include standard headers
+﻿// Include standard headers
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
@@ -22,59 +22,36 @@
 
 // global variables
 GLFWwindow* window;
-const int width = 1100, height = 1100;
+const int width = 1024, height = 1024;
 
-glm::vec3 squarePosition(0.0f, 0.0f, 0.0f); //track the position of the square
-glm::vec3 staticSquarePosition(2.0f, 3.0f, 0.0f);
-const float squareSpeed = 0.0007f; // speed of the square
+glm::vec3 characterPosition(-0.7f, 0.7f, 0.0f); 
+const float characterSpeed = 0.001f; 
 
-// positions of the squares 
-glm::vec3 positions[] = {
-    glm::vec3(-0.53f, 0.8f, 0.0f),  //1
-    glm::vec3(-0.35f, 0.8f, 0.0f),
-    glm::vec3(-0.53f, 0.7f, 0.0f),
-    glm::vec3(-0.35f, 0.7f, 0.0f),
+glm::vec3 enemyPosition(0.0f, 0.0f, 0.0f); 
+const float enemySpeed = 0.001f;
 
-    glm::vec3(-0.55f, 0.3f, 0.0f),  //2
-    glm::vec3(-0.55f, 0.38f, 0.0f),
-    glm::vec3(-0.35f, 0.3f, 0.0f),
-    glm::vec3(-0.35f, 0.38f, 0.0f),
+bool gameOver = false;
+bool isStartPage = true;
 
-    glm::vec3(-0.6f, 0.08f, 0.0f),  //3
-    glm::vec3(-0.6f, 0.05f, 0.0f),
+float game_over_min_x = -0.5f, game_over_max_x = 0.5f;
+float game_over_min_y = -0.4f, game_over_max_y = 0.4f;
 
-    glm::vec3(-0.87f, 0.88f, 0.0f),  //4
+float start_page_min_x = -0.2f, start_page_max_x = 0.2f;
+float start_page_min_y = -0.8f, start_page_max_y = -0.6f;
 
-    glm::vec3(-0.78f, 0.52f, 0.0f),  //5
-    glm::vec3(-0.78f, 0.46f, 0.0f),
-    glm::vec3(-0.9f, 0.52f, 0.0f),
-    glm::vec3(-0.9f, 0.46f, 0.0f),
+// function to draw and transform the characters
+void drawAndTransformCharacter(GLuint shader, GLuint VAO, glm::vec3 squarePosition) {
+    glUseProgram(shader);
 
-    glm::vec3(-0.9f, 0.27f, 0.0f),   //6
+    glm::mat4 transform = glm::mat4(1.0f);
+    transform = glm::translate(transform, squarePosition);
 
-    glm::vec3(-0.87f, 0.05f, 0.0f),  //7
+    unsigned int transformLoc = glGetUniformLocation(shader, "transform");
+    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
 
-    glm::vec3(-0.86f, 0.0f, 0.0f),   //8
-
-    glm::vec3(-0.85f, -0.4f, 0.0f),  //9
-    glm::vec3(-0.85f, -0.48f, 0.0f),
-
-    glm::vec3(-0.95f, -0.7f, 0.0f),   //10
-    glm::vec3(-0.95f, -0.8f, 0.0f),
-
-    glm::vec3(-0.88f, -0.88f, 0.0f),   //11
-
-    glm::vec3(-0.27f, -0.09f, 0.0f), //12
-
-    glm::vec3(-0.27f, -0.35f, 0.0f),  //13
-
-    glm::vec3(-0.37f, -0.08f, 0.0f), //14
-    glm::vec3(-0.4f, -0.2f, 0.0f),
-    glm::vec3(-0.4f, -0.35f, 0.0f),
-
-  
-};
-
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, 48, GL_UNSIGNED_INT, 0); 
+}
 
 
 
@@ -105,42 +82,71 @@ GLuint loadTexture(const char* filepath) {
     return texture;
 }
 
-bool checkCollision(const glm::vec3& playerPos, const glm::vec3& staticPos, float size) {
-    float halfSize = size / 2.0f;
+// function to handle the mouse button callback for the game over and start page
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    double xpos, ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
 
-    // Check if the player's square intersects with the static square
-    return (playerPos.x + halfSize > staticPos.x - halfSize &&
-        playerPos.x - halfSize < staticPos.x + halfSize &&
-        playerPos.y + halfSize > staticPos.y - halfSize &&
-        playerPos.y - halfSize < staticPos.y + halfSize);
-}
+    float ndc_x = (2.0f * xpos) / width - 1.0f;
+    float ndc_y = 1.0f - (2.0f * ypos) / height;
 
+    if (gameOver == true) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+            if (ndc_x >= game_over_min_x && ndc_x <= game_over_max_x &&
+                ndc_y >= game_over_min_y && ndc_y <= game_over_max_y) {
+                gameOver = false;
+                isStartPage = true;
 
-
-void processMovements(GLFWwindow* window) {
-    glm::vec3 newPosition = squarePosition; // Store the player's current position
-
-    // Update the position based on key input
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        newPosition.y += squareSpeed;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        newPosition.y -= squareSpeed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        newPosition.x += squareSpeed;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        newPosition.x -= squareSpeed;
-
-    // Check for collisions with all static squares
-    for (const auto& staticPos : positions) {
-        if (checkCollision(newPosition, staticPos, 0.1f)) { // Assuming square size is 0.1
-            return; // Cancel movement if there's a collision
+                characterPosition = glm::vec3(-0.7f, 0.7f, 0.0f);
+                enemyPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+            }
         }
     }
+    else if (isStartPage) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+            if (ndc_x >= start_page_min_x && ndc_x <= start_page_max_x &&
+                ndc_y >= start_page_min_y && ndc_y <= start_page_max_y) {
+                isStartPage = false;
+				gameOver = false;
 
-    // If no collisions, update the player's position
-    squarePosition = newPosition;
+                characterPosition = glm::vec3(-0.7f, 0.7f, 0.0f);
+                enemyPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+            }
+        }
+    }
 }
 
+
+// function to process the movements of the square
+void processMovements(GLFWwindow* window) {
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)  
+		characterPosition.y += characterSpeed; 
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        characterPosition.y -= characterSpeed;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        characterPosition.x += characterSpeed;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        characterPosition.x -= characterSpeed;
+}
+
+// function to make the enemy follow the character
+void enemyFollow(glm::vec3& enemyPosition, const glm::vec3& characterPosition, float enemySpeed) {
+    glm::vec3 direction = characterPosition - enemyPosition;
+    float length = sqrt(direction.x * direction.x + direction.y * direction.y);
+    if (length > 0.0f) {
+        direction /= length;
+        enemyPosition += direction * enemySpeed;
+    }
+}
+
+// function to check if the enemy caught the character
+void checkIfEnemyCaughtCharacter(const glm::vec3& enemyPosition, const glm::vec3& characterPosition) {
+	float distance = sqrt((enemyPosition.x - characterPosition.x) * (enemyPosition.x - characterPosition.x) +
+		(enemyPosition.y - characterPosition.y) * (enemyPosition.y - characterPosition.y));
+	if (distance < 0.1f) {
+		gameOver = true;
+	}
+}
 
 int main(void)
 {
@@ -175,55 +181,147 @@ int main(void)
         return -1;
     }
 
+    GLuint gameOverTexture = loadTexture("res/game_over.png");
+	if (gameOverTexture == 0) {
+		std::cerr << "Failed to load game over" << std::endl;
+		return -1;
+	}
+
+    GLuint startPage = loadTexture("res/start_page.png");
+    if (gameOverTexture == 0) {
+        std::cerr << "Failed to load the start page" << std::endl;
+        return -1;
+    }
+
+
     glViewport(0, 0, width, height);
 
 
 
-    float quadVertices[] = {
-        // positions      // texture coords
-        -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
-        -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
-         1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
-         1.0f,  1.0f, 0.0f,  1.0f, 1.0f
+	// ----------------- Background -----------------
+
+    float backgorundVertices[] = {
+		// background + start page
+        -1.0f,  1.0f, 0.0f,  0.0f, 1.0f, 
+        -1.0f, -1.0f, 0.0f,  0.0f, 0.0f, 
+         1.0f, -1.0f, 0.0f,  1.0f, 0.0f, 
+         1.0f,  1.0f, 0.0f,  1.0f, 1.0f, 
+
+         //Game Over
+         -0.5f,  0.4f, 0.0f,  0.0f, 1.0f, 
+         -0.5f, -0.4f, 0.0f,  0.0f, 0.0f, 
+          0.5f, -0.4f, 0.0f,  1.0f, 0.0f, 
+          0.5f,  0.4f, 0.0f,  1.0f, 1.0f  
     };
 
-    unsigned int quadIndices[] = {
-        0, 1, 2,
-        0, 2, 3
+    unsigned int backgorundIndices[] = {
+    0, 1, 2, 2, 3, 0, 
+    4, 5, 6, 6, 7, 4  
     };
 
-    // VAO, VBO, EBO for the background
-    GLuint quadVAO, quadVBO, quadEBO;
-    glGenVertexArrays(1, &quadVAO);
-    glGenBuffers(1, &quadVBO);
-    glGenBuffers(1, &quadEBO);
 
-    glBindVertexArray(quadVAO);
+    GLuint backgorundVAO, backgorundVBO, backgorundEBO;
+    glGenVertexArrays(1, &backgorundVAO);
+    glGenBuffers(1, &backgorundVBO);
+    glGenBuffers(1, &backgorundEBO);
 
-    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+    glBindVertexArray(backgorundVAO);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quadEBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(quadIndices), quadIndices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, backgorundVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(backgorundVertices), backgorundVertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, backgorundEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(backgorundIndices), backgorundIndices, GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    // vertices are used to define the shape of the square and indices are used to define the order in which the vertices are rendered
-    float vertices_main_square[] = {
-        0.05f,  0.05f, 0.0f,  // top right
-        0.05f, -0.05f, 0.0f,  // bottom right
-        -0.05f, -0.05f, 0.0f,  // bottom left
-        -0.05f,  0.05f, 0.0f   // top left 
+    GLuint backgroundShader = LoadShaders("BackgroundVertexShader.vertexshader", "BackgroundFragmentShader.fragmentshader");
+    if (backgroundShader == 0) {
+        std::cerr << "Failed to load background shaders!" << std::endl;
+        return -1;
+    }
+
+	// ----------------- Character ------------
+
+    const float scale = 0.1f;
+
+    float vertices[] = {
+        // Head 
+        -0.1f * scale,  0.6f * scale, 0.0f,  
+         0.1f * scale,  0.6f * scale, 0.0f,  
+         0.1f * scale,  0.4f * scale, 0.0f, 
+        -0.1f * scale,  0.4f * scale, 0.0f,  
+
+        // Neck
+        -0.03f * scale, 0.4f * scale, 0.0f,
+         0.03f * scale, 0.4f * scale, 0.0f,
+         0.03f * scale, 0.35f * scale, 0.0f,
+        -0.03f * scale, 0.35f * scale, 0.0f,
+
+        // Body
+        -0.1f * scale, 0.0f, 0.0f,
+         0.1f * scale, 0.0f, 0.0f,
+         0.1f * scale, 0.35f * scale, 0.0f,
+        -0.1f * scale, 0.35f * scale, 0.0f,
+
+        // Left Arm
+        -0.15f * scale, 0.3f * scale, 0.0f,
+        -0.1f * scale, 0.3f * scale, 0.0f,
+        -0.1f * scale, 0.2f * scale, 0.0f,
+        -0.15f * scale, 0.2f * scale, 0.0f,
+
+        // Right Arm
+         0.1f * scale, 0.3f * scale, 0.0f,
+         0.15f * scale, 0.3f * scale, 0.0f,
+         0.15f * scale, 0.2f * scale, 0.0f,
+         0.1f * scale, 0.2f * scale, 0.0f,
+
+         // Left Leg
+         -0.05f * scale, -0.3f * scale, 0.0f,
+         -0.02f * scale, -0.3f * scale, 0.0f,
+         -0.02f * scale, 0.0f, 0.0f,
+         -0.05f * scale, 0.0f, 0.0f,
+
+         // Right Leg
+          0.02f * scale, -0.3f * scale, 0.0f,
+          0.05f * scale, -0.3f * scale, 0.0f,
+          0.05f * scale, 0.0f, 0.0f,
+          0.02f * scale, 0.0f, 0.0f,
     };
 
-    unsigned int indices_main_square[] = {
-        0, 1, 3,
-        1, 2, 3
-    };
+    unsigned int indices[] = {
+        // Head
+        0, 1, 2,
+        0, 2, 3,
 
+        // Neck
+        4, 5, 6,
+        4, 6, 7,
+
+        // Body
+        8, 9, 10,
+        8, 10, 11,
+
+        // Left Arm
+        12, 13, 14,
+        12, 14, 15,
+
+        // Right Arm
+        16, 17, 18,
+        16, 18, 19,
+
+        // Left Leg
+        20, 21, 22,
+        20, 22, 23,
+
+        // Right Leg
+        24, 25, 26,
+        24, 26, 27,
+    };
+    
     GLuint VAO, VBO, EBO;
 
     glGenVertexArrays(1, &VAO); //generates one VAO and stores its ID in the variable VAO
@@ -232,34 +330,130 @@ int main(void)
 
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_main_square), vertices_main_square, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices_main_square), indices_main_square, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // specifies how the vertex data is structured
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // specifies how the vertex data is structured
+    glEnableVertexAttribArray(0);
+
+	// ----------------- Enemy ------------
+
+
+    float enemyVertices[] = {
+        // Head 
+        0.0f,  0.5f * scale, 0.0f,
+        0.0f,  0.6f * scale, 0.0f, 
+        0.1f * scale, 0.5f * scale, 0.0f,
+        0.0f,  0.4f * scale, 0.0f,
+        -0.1f * scale, 0.5f * scale, 0.0f,
+    
+        // Neck
+        -0.03f * scale, 0.3f * scale, 0.0f,
+        0.03f * scale, 0.3f * scale, 0.0f,
+        0.03f * scale, 0.4f * scale, 0.0f,
+        -0.03f * scale, 0.4f * scale, 0.0f,
+    
+        // Body
+        -0.1f * scale, 0.0f, 0.0f,
+        0.1f * scale, 0.0f, 0.0f,
+        0.1f * scale, 0.3f * scale, 0.0f,
+        -0.1f * scale, 0.3f * scale, 0.0f,
+    
+        // Left Arm
+        -0.2f * scale, 0.2f * scale, 0.0f,
+        -0.1f * scale, 0.2f * scale, 0.0f,
+        -0.1f * scale, 0.1f * scale, 0.0f,
+        -0.2f * scale, 0.1f * scale, 0.0f,
+    
+        // Right Arm
+        0.1f * scale, 0.2f * scale, 0.0f,
+        0.2f * scale, 0.2f * scale, 0.0f,
+        0.2f * scale, 0.1f * scale, 0.0f,
+        0.1f * scale, 0.1f * scale, 0.0f,
+    
+        // Left Leg
+        -0.05f * scale, -0.5f * scale, 0.0f,
+        -0.02f * scale, -0.5f * scale, 0.0f,
+        -0.02f * scale, 0.0f, 0.0f,
+        -0.05f * scale, 0.0f, 0.0f,
+    
+        // Right Leg
+        0.02f * scale, -0.5f * scale, 0.0f,
+        0.05f * scale, -0.5f * scale, 0.0f,
+        0.05f * scale, 0.0f, 0.0f,
+        0.02f * scale, 0.0f, 0.0f,
+        };
+    
+    unsigned int enemyIndices[] = {
+        // Head 
+        0, 1, 2,
+        0, 2, 3,
+        0, 3, 4,
+        0, 4, 1,
+    
+        // Neck
+        5, 6, 7,
+        5, 7, 8,
+    
+        // Body
+        9, 10, 11,
+        9, 11, 12,
+    
+        // Left Arm
+        13, 14, 15,
+        13, 15, 16,
+    
+        // Right Arm
+        17, 18, 19,
+        17, 19, 20,
+    
+        // Left Leg
+        21, 22, 23,
+        21, 23, 24,
+    
+        // Right Leg
+        25, 26, 27,
+        25, 27, 28,
+    };
+
+    GLuint VAOenemy, VBOenemy, EBOenemy;
+
+    glGenVertexArrays(1, &VAOenemy); //generates one VAO and stores its ID in the variable VAO
+    glGenBuffers(1, &VBOenemy);
+    glGenBuffers(1, &EBOenemy);
+
+    glBindVertexArray(VAOenemy);
+    glBindBuffer(GL_ARRAY_BUFFER, VBOenemy);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(enemyVertices), enemyVertices, GL_STATIC_DRAW);
+
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOenemy);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(enemyIndices), enemyIndices, GL_STATIC_DRAW);
+
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // specifies how the vertex data is structured
     glEnableVertexAttribArray(0);
 
-    GLuint backgroundShader = LoadShaders("BackgroundVertexShader.vertexshader", "BackgroundFragmentShader.fragmentshader");
-    if (backgroundShader == 0) {
-        std::cerr << "Failed to load background shaders!" << std::endl;
-        return -1;
-    }
-    GLuint programID = LoadShaders("SimpleVertexShader.vertexshader", "SimpleFragmentShader.fragmentshader");
-    if (programID == 0) {
+  
+    GLuint characterShader = LoadShaders("SimpleVertexShader.vertexshader", "SimpleFragmentShader.fragmentshader");
+    if (characterShader == 0) {
         std::cerr << "Failed to load main shaders!" << std::endl;
         return -1;
     }
 
+    int colorLocation = glGetUniformLocation(characterShader, "objectColor");
+
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     // the main loop of the program where the window is created and the program runs
     // any code that you want to run in the game, you have to put it inside of this loop
-    while (!glfwWindowShouldClose(window))
-    {
-        // Swap buffers
-        glfwSwapBuffers(window);
-
-        // Check for events
+    while (!glfwWindowShouldClose(window)) {
+		// Check for events
         glfwPollEvents();
 
         // Clear the screen
@@ -267,47 +461,54 @@ int main(void)
 
         // Render the background
         glUseProgram(backgroundShader);
-        glBindTexture(GL_TEXTURE_2D, backgroundTexture);
 
-        glBindVertexArray(quadVAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        if (isStartPage) {
+            glBindTexture(GL_TEXTURE_2D, startPage);
+            glBindVertexArray(backgorundVAO);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); 
+        }
+        else {
+            glBindTexture(GL_TEXTURE_2D, backgroundTexture);
+            glBindVertexArray(backgorundVAO);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); 
 
-        processMovements(window);
+            if (gameOver) {
+                glBindTexture(GL_TEXTURE_2D, gameOverTexture);
+                glBindVertexArray(backgorundVAO);
+                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(6 * sizeof(GLuint)));
+            }
+            else {
+                processMovements(window);
+                enemyFollow(enemyPosition, characterPosition, enemySpeed);
 
-        // Render the square
-        glUseProgram(programID); //the shader program is used for rendering the square
+                glUseProgram(characterShader);
+                glUniform3f(colorLocation, 1.0f, 1.0f, 1.0f);
+                drawAndTransformCharacter(characterShader, VAO, characterPosition);
 
-        // Create a transformation matrix and translate the square
-        glm::mat4 transform = glm::mat4(1.0f); // identity matrix
-        transform = glm::translate(transform, squarePosition); // move square to new position
+                glUniform3f(colorLocation, 0.0f, 0.0f, 0.0f);
+                drawAndTransformCharacter(characterShader, VAOenemy, enemyPosition);
 
-        // Apply scaling to the mobile square (player square)
-        transform = glm::scale(transform, glm::vec3(0.4f, 0.4f, 0.8f)); // scale down the mobile square
+				checkIfEnemyCaughtCharacter(enemyPosition, characterPosition);
+            }
+        }
 
-        // get the location of the transform matrix in the shader program
-        unsigned int transformLoc = glGetUniformLocation(programID, "transform");
-        // pass the transform matrix to the shader program using the glUniformMatrix4fv function
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
-
-        // Draw the mobile square (player)
-        glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-
-        //for (int i = 0; i < 10; i++) {                                       //do not delete!!! (hidden squares)
-        //    glm::mat4 transform = glm::mat4(1.0f);
-        //    transform = glm::translate(transform, positions[i]);
-        //    transform = glm::scale(transform, glm::vec3(1.8f, 1.2f, 1.0f)); // Scale static squares
-        //    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
-        //    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        //}
-
-
+        // Swap buffers
+        glfwSwapBuffers(window);
     }
+
 
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
+
+    glDeleteVertexArrays(1, &VAOenemy);
+    glDeleteBuffers(1, &VBOenemy);
+    glDeleteBuffers(1, &EBOenemy);
+
+    glDeleteVertexArrays(1, &backgorundVAO);
+    glDeleteBuffers(1, &backgorundVBO);
+    glDeleteBuffers(1, &backgorundEBO);
+
 
     glfwTerminate(); // close the program
     return 0;

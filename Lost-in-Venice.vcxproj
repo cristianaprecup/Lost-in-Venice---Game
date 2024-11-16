@@ -145,12 +145,16 @@
     <None Include=".gitignore" />
     <None Include="BackgroundFragmentShader.fragmentshader" />
     <None Include="BackgroundVertexShader.vertexshader" />
+    <None Include="glew32.dll" />
+    <None Include="glfw3.dll" />
     <None Include="SimpleFragmentShader.fragmentshader" />
     <None Include="SimpleVertexShader.vertexshader" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\background.jpg" />
     <Image Include="res\background.png" />
+    <Image Include="res\game_over.png" />
+    <Image Include="res\start_page.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
