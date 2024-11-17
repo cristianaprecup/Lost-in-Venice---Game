@@ -24,10 +24,55 @@
 GLFWwindow* window;
 const int width = 1024, height = 1024;
 
-glm::vec3 characterPosition(-0.7f, 0.7f, 0.0f); 
-const float characterSpeed = 0.001f; 
+glm::vec3 positions[] = {
+    glm::vec3(-0.53f, 0.8f, 0.0f),  //1
+    glm::vec3(-0.35f, 0.8f, 0.0f),
+    glm::vec3(-0.53f, 0.7f, 0.0f),
+    glm::vec3(-0.35f, 0.7f, 0.0f),
 
-glm::vec3 enemyPosition(0.0f, 0.0f, 0.0f); 
+    glm::vec3(-0.55f, 0.3f, 0.0f),  //2
+    glm::vec3(-0.55f, 0.38f, 0.0f),
+    glm::vec3(-0.35f, 0.3f, 0.0f),
+    glm::vec3(-0.35f, 0.38f, 0.0f),
+
+    glm::vec3(-0.6f, 0.08f, 0.0f),  //3
+    glm::vec3(-0.6f, 0.05f, 0.0f),
+
+    glm::vec3(-0.87f, 0.88f, 0.0f),  //4
+
+    glm::vec3(-0.78f, 0.52f, 0.0f),  //5
+    glm::vec3(-0.78f, 0.46f, 0.0f),
+    glm::vec3(-0.9f, 0.52f, 0.0f),
+    glm::vec3(-0.9f, 0.46f, 0.0f),
+
+    glm::vec3(-0.9f, 0.27f, 0.0f),   //6
+
+    glm::vec3(-0.87f, 0.05f, 0.0f),  //7
+
+    glm::vec3(-0.86f, 0.0f, 0.0f),   //8
+
+    glm::vec3(-0.85f, -0.4f, 0.0f),  //9
+    glm::vec3(-0.85f, -0.48f, 0.0f),
+
+    glm::vec3(-0.95f, -0.7f, 0.0f),   //10
+    glm::vec3(-0.95f, -0.8f, 0.0f),
+
+    glm::vec3(-0.88f, -0.88f, 0.0f),   //11
+
+    glm::vec3(-0.27f, -0.09f, 0.0f), //12
+
+    glm::vec3(-0.27f, -0.35f, 0.0f),  //13
+
+    glm::vec3(-0.37f, -0.08f, 0.0f), //14
+    glm::vec3(-0.4f, -0.2f, 0.0f),
+    glm::vec3(-0.4f, -0.35f, 0.0f),
+
+};
+
+glm::vec3 characterPosition(-0.7f, 0.7f, 0.0f);
+const float characterSpeed = 0.001f;
+
+glm::vec3 enemyPosition(0.0f, 0.0f, 0.0f);
 const float enemySpeed = 0.001f;
 
 bool gameOver = false;
@@ -50,9 +95,9 @@ void drawAndTransformCharacter(GLuint shader, GLuint VAO, glm::vec3 squarePositi
     glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
 
     glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, 48, GL_UNSIGNED_INT, 0); 
-}
+    glDrawElements(GL_TRIANGLES, 48, GL_UNSIGNED_INT, 0);
 
+}
 
 
 // function to load the background texture
@@ -82,6 +127,16 @@ GLuint loadTexture(const char* filepath) {
     return texture;
 }
 
+bool checkCollision(const glm::vec3& playerPos, const glm::vec3& staticPos, float size) {
+    float halfSize = size / 2.0f;
+
+    // Check if the player's square intersects with the static square
+    return (playerPos.x + halfSize > staticPos.x - halfSize &&
+        playerPos.x - halfSize < staticPos.x + halfSize &&
+        playerPos.y + halfSize > staticPos.y - halfSize &&
+        playerPos.y - halfSize < staticPos.y + halfSize);
+}
+
 // function to handle the mouse button callback for the game over and start page
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     double xpos, ypos;
@@ -107,7 +162,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             if (ndc_x >= start_page_min_x && ndc_x <= start_page_max_x &&
                 ndc_y >= start_page_min_y && ndc_y <= start_page_max_y) {
                 isStartPage = false;
-				gameOver = false;
+                gameOver = false;
 
                 characterPosition = glm::vec3(-0.7f, 0.7f, 0.0f);
                 enemyPosition = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -119,15 +174,26 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
 // function to process the movements of the square
 void processMovements(GLFWwindow* window) {
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)  
-		characterPosition.y += characterSpeed; 
+    glm::vec3 newPosition = characterPosition;
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        newPosition.y += characterSpeed;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        characterPosition.y -= characterSpeed;
+        newPosition.y -= characterSpeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        characterPosition.x += characterSpeed;
+        newPosition.x += characterSpeed;
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        characterPosition.x -= characterSpeed;
+        newPosition.x -= characterSpeed;
+
+    for (const auto& buildingPos : positions) {
+        if (checkCollision(newPosition, buildingPos, 0.1f)) {
+            return; // Cancel movement on collision
+        }
+    }
+
+    characterPosition = newPosition;
 }
+
 
 // function to make the enemy follow the character
 void enemyFollow(glm::vec3& enemyPosition, const glm::vec3& characterPosition, float enemySpeed) {
@@ -141,11 +207,11 @@ void enemyFollow(glm::vec3& enemyPosition, const glm::vec3& characterPosition, f
 
 // function to check if the enemy caught the character
 void checkIfEnemyCaughtCharacter(const glm::vec3& enemyPosition, const glm::vec3& characterPosition) {
-	float distance = sqrt((enemyPosition.x - characterPosition.x) * (enemyPosition.x - characterPosition.x) +
-		(enemyPosition.y - characterPosition.y) * (enemyPosition.y - characterPosition.y));
-	if (distance < 0.1f) {
-		gameOver = true;
-	}
+    float distance = sqrt((enemyPosition.x - characterPosition.x) * (enemyPosition.x - characterPosition.x) +
+        (enemyPosition.y - characterPosition.y) * (enemyPosition.y - characterPosition.y));
+    if (distance < 0.1f) {
+        //gameOver = true;
+    }
 }
 
 int main(void)
@@ -182,10 +248,10 @@ int main(void)
     }
 
     GLuint gameOverTexture = loadTexture("res/game_over.png");
-	if (gameOverTexture == 0) {
-		std::cerr << "Failed to load game over" << std::endl;
-		return -1;
-	}
+    if (gameOverTexture == 0) {
+        std::cerr << "Failed to load game over" << std::endl;
+        return -1;
+    }
 
     GLuint startPage = loadTexture("res/start_page.png");
     if (gameOverTexture == 0) {
@@ -196,27 +262,25 @@ int main(void)
 
     glViewport(0, 0, width, height);
 
-
-
-	// ----------------- Background -----------------
+    // ----------------- Background -----------------
 
     float backgorundVertices[] = {
-		// background + start page
-        -1.0f,  1.0f, 0.0f,  0.0f, 1.0f, 
-        -1.0f, -1.0f, 0.0f,  0.0f, 0.0f, 
-         1.0f, -1.0f, 0.0f,  1.0f, 0.0f, 
-         1.0f,  1.0f, 0.0f,  1.0f, 1.0f, 
+        // background + start page
+        -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
+         1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
+         1.0f,  1.0f, 0.0f,  1.0f, 1.0f,
 
          //Game Over
-         -0.5f,  0.4f, 0.0f,  0.0f, 1.0f, 
-         -0.5f, -0.4f, 0.0f,  0.0f, 0.0f, 
-          0.5f, -0.4f, 0.0f,  1.0f, 0.0f, 
-          0.5f,  0.4f, 0.0f,  1.0f, 1.0f  
+         -0.5f,  0.4f, 0.0f,  0.0f, 1.0f,
+         -0.5f, -0.4f, 0.0f,  0.0f, 0.0f,
+          0.5f, -0.4f, 0.0f,  1.0f, 0.0f,
+          0.5f,  0.4f, 0.0f,  1.0f, 1.0,
     };
 
     unsigned int backgorundIndices[] = {
-    0, 1, 2, 2, 3, 0, 
-    4, 5, 6, 6, 7, 4  
+    0, 1, 2, 2, 3, 0,
+    4, 5, 6, 6, 7, 4
     };
 
 
@@ -244,16 +308,16 @@ int main(void)
         return -1;
     }
 
-	// ----------------- Character ------------
+    // ----------------- Character ------------
 
     const float scale = 0.1f;
 
     float vertices[] = {
         // Head 
-        -0.1f * scale,  0.6f * scale, 0.0f,  
-         0.1f * scale,  0.6f * scale, 0.0f,  
-         0.1f * scale,  0.4f * scale, 0.0f, 
-        -0.1f * scale,  0.4f * scale, 0.0f,  
+        -0.1f * scale,  0.6f * scale, 0.0f,
+         0.1f * scale,  0.6f * scale, 0.0f,
+         0.1f * scale,  0.4f * scale, 0.0f,
+        -0.1f * scale,  0.4f * scale, 0.0f,
 
         // Neck
         -0.03f * scale, 0.4f * scale, 0.0f,
@@ -321,7 +385,7 @@ int main(void)
         24, 25, 26,
         24, 26, 27,
     };
-    
+
     GLuint VAO, VBO, EBO;
 
     glGenVertexArrays(1, &VAO); //generates one VAO and stores its ID in the variable VAO
@@ -341,81 +405,81 @@ int main(void)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // specifies how the vertex data is structured
     glEnableVertexAttribArray(0);
 
-	// ----------------- Enemy ------------
+    // ----------------- Enemy ------------
 
 
     float enemyVertices[] = {
         // Head 
         0.0f,  0.5f * scale, 0.0f,
-        0.0f,  0.6f * scale, 0.0f, 
+        0.0f,  0.6f * scale, 0.0f,
         0.1f * scale, 0.5f * scale, 0.0f,
         0.0f,  0.4f * scale, 0.0f,
         -0.1f * scale, 0.5f * scale, 0.0f,
-    
+
         // Neck
         -0.03f * scale, 0.3f * scale, 0.0f,
         0.03f * scale, 0.3f * scale, 0.0f,
         0.03f * scale, 0.4f * scale, 0.0f,
         -0.03f * scale, 0.4f * scale, 0.0f,
-    
+
         // Body
         -0.1f * scale, 0.0f, 0.0f,
         0.1f * scale, 0.0f, 0.0f,
         0.1f * scale, 0.3f * scale, 0.0f,
         -0.1f * scale, 0.3f * scale, 0.0f,
-    
+
         // Left Arm
         -0.2f * scale, 0.2f * scale, 0.0f,
         -0.1f * scale, 0.2f * scale, 0.0f,
         -0.1f * scale, 0.1f * scale, 0.0f,
         -0.2f * scale, 0.1f * scale, 0.0f,
-    
+
         // Right Arm
         0.1f * scale, 0.2f * scale, 0.0f,
         0.2f * scale, 0.2f * scale, 0.0f,
         0.2f * scale, 0.1f * scale, 0.0f,
         0.1f * scale, 0.1f * scale, 0.0f,
-    
+
         // Left Leg
         -0.05f * scale, -0.5f * scale, 0.0f,
         -0.02f * scale, -0.5f * scale, 0.0f,
         -0.02f * scale, 0.0f, 0.0f,
         -0.05f * scale, 0.0f, 0.0f,
-    
+
         // Right Leg
         0.02f * scale, -0.5f * scale, 0.0f,
         0.05f * scale, -0.5f * scale, 0.0f,
         0.05f * scale, 0.0f, 0.0f,
         0.02f * scale, 0.0f, 0.0f,
-        };
-    
+    };
+
     unsigned int enemyIndices[] = {
         // Head 
         0, 1, 2,
         0, 2, 3,
         0, 3, 4,
         0, 4, 1,
-    
+
         // Neck
         5, 6, 7,
         5, 7, 8,
-    
+
         // Body
         9, 10, 11,
         9, 11, 12,
-    
+
         // Left Arm
         13, 14, 15,
         13, 15, 16,
-    
+
         // Right Arm
         17, 18, 19,
         17, 19, 20,
-    
+
         // Left Leg
         21, 22, 23,
         21, 23, 24,
-    
+
         // Right Leg
         25, 26, 27,
         25, 27, 28,
@@ -439,7 +503,7 @@ int main(void)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // specifies how the vertex data is structured
     glEnableVertexAttribArray(0);
 
-  
+
     GLuint characterShader = LoadShaders("SimpleVertexShader.vertexshader", "SimpleFragmentShader.fragmentshader");
     if (characterShader == 0) {
         std::cerr << "Failed to load main shaders!" << std::endl;
@@ -453,7 +517,7 @@ int main(void)
     // the main loop of the program where the window is created and the program runs
     // any code that you want to run in the game, you have to put it inside of this loop
     while (!glfwWindowShouldClose(window)) {
-		// Check for events
+        // Check for events
         glfwPollEvents();
 
         // Clear the screen
@@ -465,12 +529,12 @@ int main(void)
         if (isStartPage) {
             glBindTexture(GL_TEXTURE_2D, startPage);
             glBindVertexArray(backgorundVAO);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); 
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         }
         else {
             glBindTexture(GL_TEXTURE_2D, backgroundTexture);
             glBindVertexArray(backgorundVAO);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); 
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
             if (gameOver) {
                 glBindTexture(GL_TEXTURE_2D, gameOverTexture);
@@ -478,17 +542,18 @@ int main(void)
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(6 * sizeof(GLuint)));
             }
             else {
-                processMovements(window);
+				processMovements(window);
                 enemyFollow(enemyPosition, characterPosition, enemySpeed);
 
                 glUseProgram(characterShader);
+
                 glUniform3f(colorLocation, 1.0f, 1.0f, 1.0f);
                 drawAndTransformCharacter(characterShader, VAO, characterPosition);
 
                 glUniform3f(colorLocation, 0.0f, 0.0f, 0.0f);
                 drawAndTransformCharacter(characterShader, VAOenemy, enemyPosition);
 
-				checkIfEnemyCaughtCharacter(enemyPosition, characterPosition);
+                checkIfEnemyCaughtCharacter(enemyPosition, characterPosition);
             }
         }
 
