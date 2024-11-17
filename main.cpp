@@ -210,7 +210,7 @@ void checkIfEnemyCaughtCharacter(const glm::vec3& enemyPosition, const glm::vec3
     float distance = sqrt((enemyPosition.x - characterPosition.x) * (enemyPosition.x - characterPosition.x) +
         (enemyPosition.y - characterPosition.y) * (enemyPosition.y - characterPosition.y));
     if (distance < 0.1f) {
-        //gameOver = true;
+        gameOver = true;
     }
 }
 
