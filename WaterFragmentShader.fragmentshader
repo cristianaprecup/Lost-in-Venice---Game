@@ -1,0 +1,10 @@
+#version 330 core
+out vec4 FragColor;
+
+in vec2 TexCoord;
+
+uniform vec4 objectColor;  // This includes RGBA, so alpha can be controlled
+
+void main() {
+    FragColor = objectColor;  // Set the color with transparency
+}
