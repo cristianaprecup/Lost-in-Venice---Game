@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
-#include <cstdlib>
-
 
 // Include GLEW
 #include "dependencies\glew\glew.h"
@@ -23,11 +21,8 @@
 #include "shader.hpp"
 
 // global variables
-
 GLFWwindow* window;
-const int width = 1024, height = 1024;
-glm::vec3 keyPosition;//Stores the position of the key in the game 
-
+const int width = 1904, height = 1424;
 
 glm::vec3 positions[] = {
     glm::vec3(-0.53f, 0.8f, 0.0f),  //1
@@ -130,79 +125,37 @@ glm::vec3 positions[] = {
    glm::vec3(0.9f, 0.5f, 0.0f),
 
 
-    glm::vec3(0.85f, 0.1f, 0.0f),  //7*
+   glm::vec3(0.85f, 0.1f, 0.0f),  //7*
 
-    glm::vec3(0.85f, -0.2f, 0.0f),  //8*
+   glm::vec3(0.85f, -0.2f, 0.0f),  //8*
 
-    glm::vec3(0.82f, -0.45f, 0.0f),  //9*
-    glm::vec3(0.82f, -0.48f, 0.0f),
+   glm::vec3(0.82f, -0.45f, 0.0f),  //9*
+   glm::vec3(0.82f, -0.48f, 0.0f),
 
-    glm::vec3(0.9f, -0.7f, 0.0f),   //10*
-    glm::vec3(0.9f, -0.8f, 0.0f),
+   glm::vec3(0.9f, -0.7f, 0.0f),   //10*
+   glm::vec3(0.9f, -0.8f, 0.0f),
 
-    glm::vec3(0.85f, -0.88f, 0.0f),   //11*
+   glm::vec3(0.85f, -0.88f, 0.0f),   //11*
 
 };
 
-// Function to generate a random position within bounds
-glm::vec3 getRandomPosition(float minX, float maxX, float minY, float maxY) {
-    float x = minX + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (maxX - minX)));
-    float y = minY + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (maxY - minY)));
-    return glm::vec3(x, y, 0.0f);
-}
+glm::vec3 keyPosition;
 
 glm::vec3 characterPosition(-0.7f, 0.7f, 0.0f);
-const float characterSpeed = 0.0001f;
+const float characterSpeed = 0.001f;
 
-bool isCharacterVisible = true;  // Used to control the character's visibility
+glm::vec3 enemyPosition(-0.7f, -0.7f, 0.0f);
+const float enemySpeed = 0.001f;
 
-// Check if the character is within the water area
-bool isCharacterInWater() {
-    // First water area coordinates (long river)
-    float water1X = -0.1f;
-    float water1Y = -0.9f;
-    float water1Width = 0.25f;
-    float water1Height = 1.9f;
+glm::vec3 enemy2Position(0.7f, 0.7f, 0.0f);
+const float enemy2Speed = 0.001f;
 
-    // First* water area coordinates (shorter river)
-    float water1aX = -0.1f;
-    float water1aY = -0.9f;
-    float water1aWidth = 0.32f;
-    float water1aHeight = 0.3f;
+glm::vec3 ghostPosition(0.7f, -0.7, 0.0f);
+const float ghostSpeed = 0.0005f;
 
-    // Second water area coordinates (vertical short river)
-    float water2X = -0.66f;
-    float water2Y = -0.57f;
-    float water2Width = 0.14f;
-    float water2Height = 0.37f;
-
-    // Third water area coordinates (horizontal short river)
-    float water3X = -0.52f;
-    float water3Y = -0.57f;
-    float water3Width = 0.35f;
-    float water3Height = 0.13f;
-
-    bool inFirstWater = (characterPosition.x > water1X && characterPosition.x < water1X + water1Width &&
-        characterPosition.y > water1Y && characterPosition.y < water1Y + water1Height);
-
-    bool inFirstaWater = (characterPosition.x > water1aX && characterPosition.x < water1aX + water1aWidth &&
-        characterPosition.y > water1aY && characterPosition.y < water1aY + water1aHeight);
-
-    bool inSecondWater = (characterPosition.x > water2X && characterPosition.x < water2X + water2Width &&
-        characterPosition.y > water2Y && characterPosition.y < water2Y + water2Height);
-
-    bool inThirdWater = (characterPosition.x > water3X && characterPosition.x < water3X + water3Width &&
-        characterPosition.y > water3Y && characterPosition.y < water3Y + water3Height);
-
-    return inFirstWater || inFirstaWater || inSecondWater || inThirdWater;
-}
-
-
-
-glm::vec3 enemyPosition(0.0f, 0.0f, 0.0f);
-const float enemySpeed = 0.00001f;
-
+bool isCharacterVisible = true;
 bool gameOver = false;
+bool isWin = false;
 bool isStartPage = true;
 
 float game_over_min_x = -0.5f, game_over_max_x = 0.5f;
@@ -226,17 +179,12 @@ void drawAndTransformCharacter(GLuint shader, GLuint VAO, glm::vec3 squarePositi
 
 }
 
-
-// function to load the background texture
+// function for backgrounds
 GLuint loadTexture(const char* filepath) {
     stbi_set_flip_vertically_on_load(true);
 
     int width, height, nrChannels;
     unsigned char* data = stbi_load(filepath, &width, &height, &nrChannels, 0);
-    if (!data) {
-        std::cerr << "Failed to load the background" << std::endl;
-        return 0;
-    }
 
     GLuint texture;
     glGenTextures(1, &texture);
@@ -254,14 +202,84 @@ GLuint loadTexture(const char* filepath) {
     return texture;
 }
 
+bool isCharacterorEnemyInWater(const glm::vec3& position) {
+    // long river
+    float water1X = -0.1f;
+    float water1Y = -0.9f;
+    float water1Width = 0.25f;
+    float water1Height = 1.9f;
+
+    // shorter river
+    float water1aX = -0.1f;
+    float water1aY = -0.9f;
+    float water1aWidth = 0.32f;
+    float water1aHeight = 0.3f;
+
+    // vertical short river
+    float water2X = -0.66f;
+    float water2Y = -0.57f;
+    float water2Width = 0.14f;
+    float water2Height = 0.37f;
+
+    // horizontal short river
+    float water3X = -0.52f;
+    float water3Y = -0.57f;
+    float water3Width = 0.35f;
+    float water3Height = 0.13f;
+
+    bool inFirstWater = (position.x > water1X && position.x < water1X + water1Width &&
+        position.y > water1Y && position.y < water1Y + water1Height);
+
+    bool inFirstaWater = (position.x > water1aX && position.x < water1aX + water1aWidth &&
+        position.y > water1aY && position.y < water1aY + water1aHeight);
+
+    bool inSecondWater = (position.x > water2X && position.x < water2X + water2Width &&
+        position.y > water2Y && position.y < water2Y + water2Height);
+
+    bool inThirdWater = (position.x > water3X && position.x < water3X + water3Width &&
+        position.y > water3Y && position.y < water3Y + water3Height);
+
+    return inFirstWater || inFirstaWater || inSecondWater || inThirdWater;
+}
+
 bool checkCollision(const glm::vec3& playerPos, const glm::vec3& staticPos, float size) {
     float halfSize = size / 2.0f;
 
-    // Check if the player's square intersects with the static square
     return (playerPos.x + halfSize > staticPos.x - halfSize &&
         playerPos.x - halfSize < staticPos.x + halfSize &&
         playerPos.y + halfSize > staticPos.y - halfSize &&
         playerPos.y - halfSize < staticPos.y + halfSize);
+}
+
+glm::vec3 getRandomPosition(float minX, float maxX, float minY, float maxY) {
+    float x = minX + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (maxX - minX)));
+    float y = minY + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (maxY - minY)));
+    return glm::vec3(x, y, 0.0f);
+}
+
+
+glm::vec3 getRandomKeyPosition(float minX, float maxX, float minY, float maxY) {
+    glm::vec3 newPosition;
+    bool validPosition = false;
+
+    while (!validPosition) {
+        newPosition = getRandomPosition(minX + 0.2f, maxX - 0.2f, minY + 0.2f, maxY - 0.2f);
+
+        validPosition = true;
+
+        if (isCharacterorEnemyInWater(newPosition)) {
+            validPosition = false;
+            continue;
+        }
+
+        for (const auto& blockPos : positions) {
+            if (checkCollision(newPosition, blockPos, 0.1f)) {
+                validPosition = false;
+                break;
+            }
+        }
+    }
+    return newPosition;
 }
 
 // function to handle the mouse button callback for the game over and start page
@@ -279,8 +297,28 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                 gameOver = false;
                 isStartPage = true;
 
-                characterPosition = glm::vec3(-0.7f, 0.7f, 0.0f);
-                enemyPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+                characterPosition = glm::vec3(-0.7f, 0.7f, 0.0f);;
+                enemyPosition = glm::vec3(-0.7f, -0.7f, 0.0f);
+                enemy2Position = glm::vec3(0.7f, 0.7f, 0.0f);
+                ghostPosition = glm::vec3(0.7f, -0.7, 0.0f);
+
+                keyPosition = getRandomKeyPosition(-1.0f, 1.0f, -1.0f, 1.0f);
+            }
+        }
+    }
+    else if (isWin) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+            if (ndc_x >= game_over_min_x && ndc_x <= game_over_max_x &&
+                ndc_y >= game_over_min_y && ndc_y <= game_over_max_y) {
+                isWin = false;
+                isStartPage = true;
+
+                characterPosition = glm::vec3(-0.7f, 0.7f, 0.0f);;
+                enemyPosition = glm::vec3(-0.7f, -0.7f, 0.0f);
+                enemy2Position = glm::vec3(0.7f, 0.7f, 0.0f);
+                ghostPosition = glm::vec3(0.7f, -0.7, 0.0f);
+
+                keyPosition = getRandomKeyPosition(-1.0f, 1.0f, -1.0f, 1.0f);
             }
         }
     }
@@ -291,15 +329,18 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                 isStartPage = false;
                 gameOver = false;
 
-                characterPosition = glm::vec3(-0.7f, 0.7f, 0.0f);
-                enemyPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+                characterPosition = glm::vec3(-0.7f, 0.7f, 0.0f);;
+                enemyPosition = glm::vec3(-0.7f, -0.7f, 0.0f);
+                enemy2Position = glm::vec3(0.7f, 0.7f, 0.0f);
+                ghostPosition = glm::vec3(0.7f, -0.7, 0.0f);
+
+                keyPosition = getRandomKeyPosition(-1.0f, 1.0f, -1.0f, 1.0f);
             }
         }
     }
 }
 
 
-// Function to process the movements of the character
 void processMovements(GLFWwindow* window) {
     glm::vec3 newPosition = characterPosition;
 
@@ -312,81 +353,83 @@ void processMovements(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
         newPosition.x -= characterSpeed;
 
-    // Check for collisions with buildings (not in the water logic)
     for (const auto& buildingPos : positions) {
         if (checkCollision(newPosition, buildingPos, 0.1f)) {
-            return; // Cancel movement on collision
+            return;
         }
     }
 
-    // Update character position and visibility based on water area
+    // to keep the character inside the window
+    if (newPosition.x > 1.0f) newPosition.x = 1.0f;
+    if (newPosition.x < -1.0f) newPosition.x = -1.0f;
+    if (newPosition.y > 1.0f) newPosition.y = 1.0f;
+    if (newPosition.y < -1.0f) newPosition.y = -1.0f;
+
     characterPosition = newPosition;
-    isCharacterVisible = !isCharacterInWater();  // Hide character if in water
 }
 
-
-
-// function to make the enemy follow the character
-void enemyFollow(glm::vec3& enemyPosition, const glm::vec3& characterPosition, float enemySpeed) {
+void enemyFollow(glm::vec3& enemyPosition, const glm::vec3& characterPosition, float enemySpeed, const glm::vec3* obstacles, size_t obstacleCount, float obstacleSize) {
     glm::vec3 direction = characterPosition - enemyPosition;
-    float length = sqrt(direction.x * direction.x + direction.y * direction.y);
+    float length = glm::length(direction);
+
     if (length > 0.0f) {
         direction /= length;
-        enemyPosition += direction * enemySpeed;
-    }
-}
 
-//the key doesn't generate in water/blocks 
+        glm::vec3 nextPosition = enemyPosition + direction * enemySpeed;
 
-bool isPositionInWater(const glm::vec3& position) {
-    float water1X = -0.1f, water1Y = -0.9f, water1Width = 0.25f, water1Height = 1.9f;
-    float water1aX = -0.1f, water1aY = -0.9f, water1aWidth = 0.32f, water1aHeight = 0.3f;
-    float water2X = -0.66f, water2Y = -0.57f, water2Width = 0.14f, water2Height = 0.37f;
-    float water3X = -0.52f, water3Y = -0.57f, water3Width = 0.35f, water3Height = 0.13f;
+        bool collisionDetected = false;
+        bool inWater = isCharacterorEnemyInWater(nextPosition);
 
-    bool inFirstWater = (position.x > water1X && position.x < water1X + water1Width &&
-        position.y > water1Y && position.y < water1Y + water1Height);
-    bool inFirstaWater = (position.x > water1aX && position.x < water1aX + water1aWidth &&
-        position.y > water1aY && position.y < water1aY + water1aHeight);
-    bool inSecondWater = (position.x > water2X && position.x < water2X + water2Width &&
-        position.y > water2Y && position.y < water2Y + water2Height);
-    bool inThirdWater = (position.x > water3X && position.x < water3X + water3Width &&
-        position.y > water3Y && position.y < water3Y + water3Height);
-
-    return inFirstWater || inFirstaWater || inSecondWater || inThirdWater;
-}
-//Generates a random valid position for the within given range 
-
-glm::vec3 getRandomKeyPosition(float minX, float maxX, float minY, float maxY) {
-    glm::vec3 newPosition;
-    bool validPosition = false;
-
-    while (!validPosition) {
-        // Generate a random position within a slightly smaller range to avoid borders
-        newPosition = getRandomPosition(minX + 0.2f, maxX - 0.2f, minY + 0.2f, maxY - 0.2f);
-
-        validPosition = true;
-        // Check if the key is in water
-        if (isPositionInWater(newPosition)) {
-            validPosition = false;
-            continue;
-        }
-        // Check for collision with blocks
-        for (const auto& blockPos : positions) {
-            if (checkCollision(newPosition, blockPos, 0.1f)) {
-                validPosition = false;
+        for (size_t i = 0; i < obstacleCount; ++i) {
+            if (checkCollision(nextPosition, obstacles[i], obstacleSize)) {
+                collisionDetected = true;
                 break;
             }
         }
+
+        if (collisionDetected || inWater) {
+            float avoidDistance = enemySpeed * 1.5f;
+            glm::vec3 avoidDirection1 = glm::normalize(glm::vec3(-direction.y, direction.x, 0.0f)); // 90 degrees 
+            glm::vec3 avoidDirection2 = glm::normalize(glm::vec3(direction.y, -direction.x, 0.0f)); // -90 degrees
+
+            glm::vec3 alternativePosition1 = enemyPosition + avoidDirection1 * avoidDistance;
+            glm::vec3 alternativePosition2 = enemyPosition + avoidDirection2 * avoidDistance;
+
+            bool collision1 = false, collision2 = false;
+
+            for (size_t i = 0; i < obstacleCount; ++i) {
+                if (checkCollision(alternativePosition1, obstacles[i], obstacleSize) || isCharacterorEnemyInWater(alternativePosition1)) {
+                    collision1 = true;
+                }
+                if (checkCollision(alternativePosition2, obstacles[i], obstacleSize) || isCharacterorEnemyInWater(alternativePosition2)) {
+                    collision2 = true;
+                }
+            }
+
+            if (!collision1) {
+                enemyPosition = alternativePosition1;
+            }
+            else if (!collision2) {
+                enemyPosition = alternativePosition2;
+            }
+        }
+        else {
+            enemyPosition = nextPosition;
+        }
     }
-    return newPosition;
+}
+
+void ghostFollow(glm::vec3& ghostPosition, const glm::vec3& characterPosition, float ghostSpeed) {
+    glm::vec3 direction = characterPosition - ghostPosition;
+    float length = glm::length(direction);
+
+    if (length > 0.0f) {
+        direction /= length;
+        ghostPosition += direction * ghostSpeed;
+    }
 }
 
 
-//-----------------
-
-
-// function to check if the enemy caught the character
 void checkIfEnemyCaughtCharacter(const glm::vec3& enemyPosition, const glm::vec3& characterPosition) {
     float distance = sqrt((enemyPosition.x - characterPosition.x) * (enemyPosition.x - characterPosition.x) +
         (enemyPosition.y - characterPosition.y) * (enemyPosition.y - characterPosition.y));
@@ -395,7 +438,15 @@ void checkIfEnemyCaughtCharacter(const glm::vec3& enemyPosition, const glm::vec3
     }
 }
 
-int main(void)
+void checkIfCharacterGotKey(const glm::vec3& characterPosition, const glm::vec3& keyPosition) {
+    float distance = sqrt((keyPosition.x - characterPosition.x) * (keyPosition.x - characterPosition.x) +
+        (keyPosition.y - characterPosition.y) * (keyPosition.y - characterPosition.y));
+    if (distance < 0.1f) {
+        isWin = true;
+    }
+}
+
+int main(int argc, char* argv[])
 {
     // Initialise GLFW
     if (!glfwInit())
@@ -415,7 +466,7 @@ int main(void)
     glfwMakeContextCurrent(window);
 
     // Initialize GLEW
-    glewExperimental = true; // Needed for core profile
+    glewExperimental = true;
     if (glewInit() != GLEW_OK) {
         fprintf(stderr, "Failed to initialize GLEW\n");
         glfwTerminate();
@@ -440,62 +491,15 @@ int main(void)
         return -1;
     }
 
-    
+    GLuint win = loadTexture("res/win.png");
+    if (win == 0) {
+        std::cerr << "Failed to load the win page" << std::endl;
+        return -1;
+    }
 
 
     glViewport(0, 0, width, height);
-  
 
-    // Initialize specific key position to a place
-
-    keyPosition = glm::vec3(0.3f, 0.3f, 0.0f); 
-
-    //-------------------key----------------------
-
-    float keyVertices[] = {
-        // Head of the key (square)
-        0.015f,  0.015f, 0.0f,  // top right
-        0.015f, -0.015f, 0.0f,  // bottom right
-        -0.015f, -0.015f, 0.0f, // bottom left
-        -0.015f,  0.015f, 0.0f, // top left
-
-        // Stem of the key (rectangle)
-        -0.009f, -0.009f, 0.0f, // top left of the stem
-        0.009f, -0.009f, 0.0f,  // top right of the stem
-        0.009f, -0.06f, 0.0f,  // bottom right of the stem
-        -0.009f, -0.06f, 0.0f  // bottom left of the stem
-    };
-
-    unsigned int keyIndices[] = {
-        // Indices for the square (head)
-        0, 1, 2,
-        2, 3, 0,
-
-        // Indices for the rectangle (stem)
-        4, 5, 6,
-        6, 7, 4
-    };
-
-
-    GLuint keyVAO, keyVBO, keyEBO;
-    glGenVertexArrays(1, &keyVAO);
-    glGenBuffers(1, &keyVBO);
-    glGenBuffers(1, &keyEBO);
-
-    glBindVertexArray(keyVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, keyVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(keyVertices), keyVertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, keyEBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(keyIndices), keyIndices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-
-
-    //keyPosition = getRandomKeyPosition(-1.0f, 1.0f, -1.0f, 1.0f);
-  
     // ----------------- Background -----------------
 
     float backgorundVertices[] = {
@@ -634,8 +638,6 @@ int main(void)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // specifies how the vertex data is structured
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // specifies how the vertex data is structured
     glEnableVertexAttribArray(0);
 
@@ -729,10 +731,8 @@ int main(void)
     glBindBuffer(GL_ARRAY_BUFFER, VBOenemy);
     glBufferData(GL_ARRAY_BUFFER, sizeof(enemyVertices), enemyVertices, GL_STATIC_DRAW);
 
-
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOenemy);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(enemyIndices), enemyIndices, GL_STATIC_DRAW);
-
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // specifies how the vertex data is structured
     glEnableVertexAttribArray(0);
@@ -744,60 +744,53 @@ int main(void)
         return -1;
     }
 
-    int colorLocation = glGetUniformLocation(characterShader, "objectColor");
-
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
-
     // ----------------- Water Blocks ------------
 
     GLfloat waterVertices[] = {
-        // First water area (long river)
-        -0.1f, 1.0f, 0.0f, // Top left
-        0.15f, 1.0f, 0.0f,  // Top right
-        0.15f, -0.9f, 0.0f,  // Bottom right
-        -0.1f, -0.9f, 0.0f,  // Bottom left
+        // long river
+        -0.1f, 1.0f, 0.0f,
+        0.15f, 1.0f, 0.0f,
+        0.15f, -0.9f, 0.0f,
+        -0.1f, -0.9f, 0.0f,
 
-        // First* water area (shorter river)
-        -0.1f, -0.6f, 0.0f, // Top left
-        0.22f, -0.6f, 0.0f,  // Top right
-        0.22f, -0.9f, 0.0f,  // Bottom right
-        -0.1f, -0.9f, 0.0f,  // Bottom left
+        // shorter river
+        -0.1f, -0.6f, 0.0f,
+        0.22f, -0.6f, 0.0f,
+        0.22f, -0.9f, 0.0f,
+        -0.1f, -0.9f, 0.0f,
 
-        // Second water area (vertical short river)
-        -0.66f, -0.2f, 0.0f, // Top left
-        -0.52f, -0.2f, 0.0f,  // Top right
-        -0.52f, -0.57f, 0.0f,  // Bottom right
-        -0.66f, -0.57f, 0.0f,  // Bottom left
+        // vertical short river
+        -0.66f, -0.2f, 0.0f,
+        -0.52f, -0.2f, 0.0f,
+        -0.52f, -0.57f, 0.0f,
+        -0.66f, -0.57f, 0.0f,
 
-        // Third water area (horizontal short river)
-        -0.52f, -0.44f, 0.0f, // Top left
-        -0.17f, -0.44f, 0.0f,  // Top right
-        -0.17f, -0.57f, 0.0f,  // Bottom right
-        -0.52f, -0.57f, 0.0f   // Bottom left
+        // horizontal short river
+        -0.52f, -0.44f, 0.0f,
+        -0.17f, -0.44f, 0.0f,
+        -0.17f, -0.57f, 0.0f,
+        -0.52f, -0.57f, 0.0f
     };
 
 
 
     GLuint waterIndices[] = {
-        // First water area (long river)
-        0, 1, 2,   // First triangle
-        2, 3, 0,   // Second triangle
+        //long river
+        0, 1, 2,
+        2, 3, 0,
 
-        // First* water area (shorter river)
-        4, 5, 6,   // First triangle
-        6, 7, 4,   // Second triangle
+        // shorter river
+        4, 5, 6,
+        6, 7, 4,
 
-        // Second water area (vertical short river)
-        8, 9, 10,  // First triangle
-        10, 11, 8, // Second triangle
+        // vertical short river
+        8, 9, 10,
+        10, 11, 8,
 
-        // Third water area (horizontal short river)
-        12, 13, 14, // First triangle
-        14, 15, 12  // Second triangle
+        // horizontal short river
+        12, 13, 14,
+        14, 15, 12
     };
-
-
-
 
     GLuint waterVAO, waterVBO, waterEBO;
     glGenVertexArrays(1, &waterVAO);
@@ -820,34 +813,63 @@ int main(void)
         return -1;
     }
 
-    // Enable blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Bind the water shader program
-    glUseProgram(waterShader);
+    // ----------------- Key ------------
+    keyPosition = getRandomKeyPosition(-1.0f, 1.0f, -1.0f, 1.0f);
 
-    // Set the objectColor uniform to fully transparent
+    float keyVertices[] = {
+        0.015f,  0.015f, 0.0f,
+        0.015f, -0.015f, 0.0f,
+        -0.015f, -0.015f, 0.0f,
+        -0.015f,  0.015f, 0.0f,
+
+        -0.009f, -0.009f, 0.0f,
+        0.009f, -0.009f, 0.0f,
+        0.009f, -0.06f, 0.0f,
+        -0.009f, -0.06f, 0.0f
+    };
+
+    unsigned int keyIndices[] = {
+        0, 1, 2,
+        2, 3, 0,
+
+        4, 5, 6,
+        6, 7, 4
+    };
+
+
+    GLuint keyVAO, keyVBO, keyEBO;
+    glGenVertexArrays(1, &keyVAO);
+    glGenBuffers(1, &keyVBO);
+    glGenBuffers(1, &keyEBO);
+
+    glBindVertexArray(keyVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, keyVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(keyVertices), keyVertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, keyEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(keyIndices), keyIndices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+
     GLint objectColorLocation = glGetUniformLocation(waterShader, "objectColor");
-    glUniform4f(objectColorLocation, 0.0f, 0.0f, 0.0f, 0.0f);  // RGBA values for fully transparent
 
-    // Now you can draw the water object
-    glBindVertexArray(waterVAO);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    int colorLocation = glGetUniformLocation(characterShader, "objectColor");
 
-    // The main loop of the program where the window is created and the program runs
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+
     while (!glfwWindowShouldClose(window)) {
         // Clear the screen
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT);
 
         // Check for events
         glfwPollEvents();
 
-        // Render background texture
         glUseProgram(backgroundShader);
-        glBindVertexArray(backgorundVAO);
-        glBindTexture(GL_TEXTURE_2D, backgroundTexture);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         if (isStartPage) {
             glBindTexture(GL_TEXTURE_2D, startPage);
@@ -864,56 +886,60 @@ int main(void)
                 glBindVertexArray(backgorundVAO);
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(6 * sizeof(GLuint)));
             }
+            else if (isWin) {
+                glBindTexture(GL_TEXTURE_2D, win);
+                glBindVertexArray(backgorundVAO);
+                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(6 * sizeof(GLuint)));
+            }
             else {
                 processMovements(window);
-                enemyFollow(enemyPosition, characterPosition, enemySpeed);
 
-                // Update character's visibility based on water area
-                isCharacterVisible = !isCharacterInWater();
+                enemyFollow(enemyPosition, characterPosition, enemySpeed, positions, sizeof(positions) / sizeof(glm::vec3), 0.1f);
+                enemyFollow(enemy2Position, characterPosition, enemy2Speed, positions, sizeof(positions) / sizeof(glm::vec3), 0.1f);
+                ghostFollow(ghostPosition, characterPosition, ghostSpeed);
 
-                // Render the water
                 glUseProgram(waterShader);
-                glUniform4f(objectColorLocation, 0.0f, 0.0f, 0.0f, 0.0f);  // Ensure the water is fully transparent  
+                glUniform4f(objectColorLocation, 0.0f, 0.0f, 0.0f, 0.0f); // transparent water 
                 glBindVertexArray(waterVAO);
                 glDrawElements(GL_TRIANGLES, sizeof(waterIndices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
 
-                // Render the character if visible
+                isCharacterVisible = !isCharacterorEnemyInWater(characterPosition);
+
                 if (isCharacterVisible) {
                     glUseProgram(characterShader);
-                    glUniform3f(colorLocation, 1.0f, 1.0f, 1.0f); // Character color
+                    glUniform3f(colorLocation, 1.0f, 1.0f, 1.0f);
                     drawAndTransformCharacter(characterShader, VAO, characterPosition);
                 }
 
-                // Render the enemy
                 glUseProgram(characterShader);
-                glUniform3f(colorLocation, 0.0f, 0.0f, 0.0f); // Enemy color
+
+                glUniform3f(colorLocation, 0.0f, 0.0f, 0.0f);
                 drawAndTransformCharacter(characterShader, VAOenemy, enemyPosition);
 
-                // Check if the enemy caught the character
-                checkIfEnemyCaughtCharacter(enemyPosition, characterPosition);
+                glUniform3f(colorLocation, 0.0f, 0.0f, 0.0f);
+                drawAndTransformCharacter(characterShader, VAOenemy, enemy2Position);
 
-                // Render the key
+                glUniform3f(colorLocation, 0.7f, 0.7f, 0.7f);
+                drawAndTransformCharacter(characterShader, VAOenemy, ghostPosition);
+
                 glUseProgram(characterShader);
                 glUniform3f(glGetUniformLocation(characterShader, "objectColor"), 1.0f, 1.0f, 0.0f); // Yellow color for the key
                 glBindVertexArray(keyVAO);
-                glm::mat4 transform = glm::translate(glm::mat4(1.0f), keyPosition); // Use keyPosition here
+                glm::mat4 transform = glm::translate(glm::mat4(1.0f), keyPosition);
                 glUniformMatrix4fv(glGetUniformLocation(characterShader, "transform"), 1, GL_FALSE, glm::value_ptr(transform));
-                glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0); // Adjust the count to match the new indices
+                glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
 
-                // Check if the key is caught by the character
-                if (checkCollision(characterPosition, keyPosition, 0.05f)) { // Use keyPosition here
-                    std::cout << "Key caught! Repositioning key." << std::endl;
-                    keyPosition = getRandomKeyPosition(-1.0f, 1.0f, -1.0f, 1.0f); // Use keyPosition here
-                }
+                checkIfCharacterGotKey(characterPosition, keyPosition);
+                checkIfEnemyCaughtCharacter(enemyPosition, characterPosition);
+                checkIfEnemyCaughtCharacter(enemy2Position, characterPosition);
+                checkIfEnemyCaughtCharacter(ghostPosition, characterPosition);
             }
         }
 
-        // Swap buffers
         glfwSwapBuffers(window);
     }
 
-     
-   
+    // Cleanup code 
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
@@ -930,7 +956,6 @@ int main(void)
     glDeleteBuffers(1, &waterVBO);
     glDeleteBuffers(1, &waterEBO);
 
-    glfwTerminate(); // Close the program
+    glfwTerminate(); // close the program
     return 0;
 }
-

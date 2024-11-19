@@ -157,6 +157,7 @@
     <Image Include="res\background.png" />
     <Image Include="res\game_over.png" />
     <Image Include="res\start_page.png" />
+    <Image Include="res\win.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
