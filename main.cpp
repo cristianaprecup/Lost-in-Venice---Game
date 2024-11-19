@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include <cstdlib>
+
 
 // Include GLEW
 #include "dependencies\glew\glew.h"
@@ -21,9 +23,10 @@
 #include "shader.hpp"
 
 // global variables
+
 GLFWwindow* window;
 const int width = 1024, height = 1024;
-
+glm::vec3 keyPosition;//Stores the position of the key in the game 
 
 
 glm::vec3 positions[] = {
@@ -141,9 +144,15 @@ glm::vec3 positions[] = {
 
 };
 
+// Function to generate a random position within bounds
+glm::vec3 getRandomPosition(float minX, float maxX, float minY, float maxY) {
+    float x = minX + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (maxX - minX)));
+    float y = minY + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (maxY - minY)));
+    return glm::vec3(x, y, 0.0f);
+}
 
 glm::vec3 characterPosition(-0.7f, 0.7f, 0.0f);
-const float characterSpeed = 0.001f;
+const float characterSpeed = 0.0001f;
 
 bool isCharacterVisible = true;  // Used to control the character's visibility
 
@@ -191,7 +200,7 @@ bool isCharacterInWater() {
 
 
 glm::vec3 enemyPosition(0.0f, 0.0f, 0.0f);
-const float enemySpeed = 0.0001f;
+const float enemySpeed = 0.00001f;
 
 bool gameOver = false;
 bool isStartPage = true;
@@ -327,6 +336,56 @@ void enemyFollow(glm::vec3& enemyPosition, const glm::vec3& characterPosition, f
     }
 }
 
+//the key doesn't generate in water/blocks 
+
+bool isPositionInWater(const glm::vec3& position) {
+    float water1X = -0.1f, water1Y = -0.9f, water1Width = 0.25f, water1Height = 1.9f;
+    float water1aX = -0.1f, water1aY = -0.9f, water1aWidth = 0.32f, water1aHeight = 0.3f;
+    float water2X = -0.66f, water2Y = -0.57f, water2Width = 0.14f, water2Height = 0.37f;
+    float water3X = -0.52f, water3Y = -0.57f, water3Width = 0.35f, water3Height = 0.13f;
+
+    bool inFirstWater = (position.x > water1X && position.x < water1X + water1Width &&
+        position.y > water1Y && position.y < water1Y + water1Height);
+    bool inFirstaWater = (position.x > water1aX && position.x < water1aX + water1aWidth &&
+        position.y > water1aY && position.y < water1aY + water1aHeight);
+    bool inSecondWater = (position.x > water2X && position.x < water2X + water2Width &&
+        position.y > water2Y && position.y < water2Y + water2Height);
+    bool inThirdWater = (position.x > water3X && position.x < water3X + water3Width &&
+        position.y > water3Y && position.y < water3Y + water3Height);
+
+    return inFirstWater || inFirstaWater || inSecondWater || inThirdWater;
+}
+//Generates a random valid position for the within given range 
+
+glm::vec3 getRandomKeyPosition(float minX, float maxX, float minY, float maxY) {
+    glm::vec3 newPosition;
+    bool validPosition = false;
+
+    while (!validPosition) {
+        // Generate a random position within a slightly smaller range to avoid borders
+        newPosition = getRandomPosition(minX + 0.2f, maxX - 0.2f, minY + 0.2f, maxY - 0.2f);
+
+        validPosition = true;
+        // Check if the key is in water
+        if (isPositionInWater(newPosition)) {
+            validPosition = false;
+            continue;
+        }
+        // Check for collision with blocks
+        for (const auto& blockPos : positions) {
+            if (checkCollision(newPosition, blockPos, 0.1f)) {
+                validPosition = false;
+                break;
+            }
+        }
+    }
+    return newPosition;
+}
+
+
+//-----------------
+
+
 // function to check if the enemy caught the character
 void checkIfEnemyCaughtCharacter(const glm::vec3& enemyPosition, const glm::vec3& characterPosition) {
     float distance = sqrt((enemyPosition.x - characterPosition.x) * (enemyPosition.x - characterPosition.x) +
@@ -381,9 +440,62 @@ int main(void)
         return -1;
     }
 
+    
+
 
     glViewport(0, 0, width, height);
+  
 
+    // Initialize specific key position to a place
+
+    keyPosition = glm::vec3(0.3f, 0.3f, 0.0f); 
+
+    //-------------------key----------------------
+
+    float keyVertices[] = {
+        // Head of the key (square)
+        0.015f,  0.015f, 0.0f,  // top right
+        0.015f, -0.015f, 0.0f,  // bottom right
+        -0.015f, -0.015f, 0.0f, // bottom left
+        -0.015f,  0.015f, 0.0f, // top left
+
+        // Stem of the key (rectangle)
+        -0.009f, -0.009f, 0.0f, // top left of the stem
+        0.009f, -0.009f, 0.0f,  // top right of the stem
+        0.009f, -0.06f, 0.0f,  // bottom right of the stem
+        -0.009f, -0.06f, 0.0f  // bottom left of the stem
+    };
+
+    unsigned int keyIndices[] = {
+        // Indices for the square (head)
+        0, 1, 2,
+        2, 3, 0,
+
+        // Indices for the rectangle (stem)
+        4, 5, 6,
+        6, 7, 4
+    };
+
+
+    GLuint keyVAO, keyVBO, keyEBO;
+    glGenVertexArrays(1, &keyVAO);
+    glGenBuffers(1, &keyVBO);
+    glGenBuffers(1, &keyEBO);
+
+    glBindVertexArray(keyVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, keyVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(keyVertices), keyVertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, keyEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(keyIndices), keyIndices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+
+
+    //keyPosition = getRandomKeyPosition(-1.0f, 1.0f, -1.0f, 1.0f);
+  
     // ----------------- Background -----------------
 
     float backgorundVertices[] = {
@@ -726,13 +838,16 @@ int main(void)
     // The main loop of the program where the window is created and the program runs
     while (!glfwWindowShouldClose(window)) {
         // Clear the screen
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Check for events
         glfwPollEvents();
 
-        // Render the background
+        // Render background texture
         glUseProgram(backgroundShader);
+        glBindVertexArray(backgorundVAO);
+        glBindTexture(GL_TEXTURE_2D, backgroundTexture);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         if (isStartPage) {
             glBindTexture(GL_TEXTURE_2D, startPage);
@@ -753,35 +868,43 @@ int main(void)
                 processMovements(window);
                 enemyFollow(enemyPosition, characterPosition, enemySpeed);
 
+                // Update character's visibility based on water area
+                isCharacterVisible = !isCharacterInWater();
+
                 // Render the water
                 glUseProgram(waterShader);
                 glUniform4f(objectColorLocation, 0.0f, 0.0f, 0.0f, 0.0f);  // Ensure the water is fully transparent  
                 glBindVertexArray(waterVAO);
                 glDrawElements(GL_TRIANGLES, sizeof(waterIndices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
 
-                // Update the square's visibility based on its position
-                isCharacterVisible = !isCharacterInWater();
-
-                // Render the square if it is visible
-                if (isCharacterVisible) {
-                    glUseProgram(characterShader);
-                    glBindVertexArray(VAO);
-                    glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
-                }
-
                 // Render the character if visible
                 if (isCharacterVisible) {
                     glUseProgram(characterShader);
-                    glUniform3f(colorLocation, 1.0f, 1.0f, 1.0f);
+                    glUniform3f(colorLocation, 1.0f, 1.0f, 1.0f); // Character color
                     drawAndTransformCharacter(characterShader, VAO, characterPosition);
                 }
 
                 // Render the enemy
-                glUniform3f(colorLocation, 0.0f, 0.0f, 0.0f);
+                glUseProgram(characterShader);
+                glUniform3f(colorLocation, 0.0f, 0.0f, 0.0f); // Enemy color
                 drawAndTransformCharacter(characterShader, VAOenemy, enemyPosition);
 
                 // Check if the enemy caught the character
                 checkIfEnemyCaughtCharacter(enemyPosition, characterPosition);
+
+                // Render the key
+                glUseProgram(characterShader);
+                glUniform3f(glGetUniformLocation(characterShader, "objectColor"), 1.0f, 1.0f, 0.0f); // Yellow color for the key
+                glBindVertexArray(keyVAO);
+                glm::mat4 transform = glm::translate(glm::mat4(1.0f), keyPosition); // Use keyPosition here
+                glUniformMatrix4fv(glGetUniformLocation(characterShader, "transform"), 1, GL_FALSE, glm::value_ptr(transform));
+                glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0); // Adjust the count to match the new indices
+
+                // Check if the key is caught by the character
+                if (checkCollision(characterPosition, keyPosition, 0.05f)) { // Use keyPosition here
+                    std::cout << "Key caught! Repositioning key." << std::endl;
+                    keyPosition = getRandomKeyPosition(-1.0f, 1.0f, -1.0f, 1.0f); // Use keyPosition here
+                }
             }
         }
 
@@ -789,7 +912,8 @@ int main(void)
         glfwSwapBuffers(window);
     }
 
-    // Cleanup code remains the same
+     
+   
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
