@@ -1,3 +1,0 @@
-C:/Users/gabri/test/Lost-in-Venice---Game/build/CMakeFiles/Lost-in-Venice.dir
-C:/Users/gabri/test/Lost-in-Venice---Game/build/CMakeFiles/ALL_BUILD.dir
-C:/Users/gabri/test/Lost-in-Venice---Game/build/CMakeFiles/ZERO_CHECK.dir
