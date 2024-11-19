@@ -135,10 +135,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Camera\camera.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="shader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera\camera.h" />
+    <ClInclude Include="dependencies\stb_image.h" />
     <ClInclude Include="shader.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -149,6 +152,8 @@
     <None Include="glfw3.dll" />
     <None Include="SimpleFragmentShader.fragmentshader" />
     <None Include="SimpleVertexShader.vertexshader" />
+    <None Include="WaterFragmentShader.fragmentshader" />
+    <None Include="WaterVertexShader.vertexshader" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\background.jpg" />

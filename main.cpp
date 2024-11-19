@@ -20,9 +20,16 @@
 
 #include "shader.hpp"
 
+#include "dependencies\SDL2_mixer-2.8.0\include\SDL_mixer.h"
+#include "dependencies\SDL2-2.30.9\include\SDL.h"
+#include "dependencies\SDL2-2.30.9\include\SDL_main.h"
+
+//sound variable
+Mix_Chunk* horrorSound = NULL;
+
 // global variables
 GLFWwindow* window;
-const int width = 1024, height = 1024;
+const int width = 1904, height = 1424;
 
 glm::vec3 positions[] = {
     glm::vec3(-0.53f, 0.8f, 0.0f),  //1
@@ -40,6 +47,8 @@ glm::vec3 positions[] = {
 
     glm::vec3(-0.87f, 0.88f, 0.0f),  //4
 
+    glm::vec3(-0.7f, 0.88f, 0.0f),  //16
+
     glm::vec3(-0.78f, 0.52f, 0.0f),  //5
     glm::vec3(-0.78f, 0.46f, 0.0f),
     glm::vec3(-0.9f, 0.52f, 0.0f),
@@ -49,13 +58,19 @@ glm::vec3 positions[] = {
 
     glm::vec3(-0.87f, 0.05f, 0.0f),  //7
 
-    glm::vec3(-0.86f, 0.0f, 0.0f),   //8
+    glm::vec3(-0.86f, -0.15f, 0.0f),   //8
 
     glm::vec3(-0.85f, -0.4f, 0.0f),  //9
     glm::vec3(-0.85f, -0.48f, 0.0f),
 
     glm::vec3(-0.95f, -0.7f, 0.0f),   //10
     glm::vec3(-0.95f, -0.8f, 0.0f),
+
+    glm::vec3(-0.6f, -0.7f, 0.0f),   //17
+    glm::vec3(-0.6f, -0.75f, 0.0f),
+
+    glm::vec3(-0.38f, -0.85f, 0.0f),   //18
+    glm::vec3(-0.38f, -0.9f, 0.0f),
 
     glm::vec3(-0.88f, -0.88f, 0.0f),   //11
 
@@ -67,14 +82,85 @@ glm::vec3 positions[] = {
     glm::vec3(-0.4f, -0.2f, 0.0f),
     glm::vec3(-0.4f, -0.35f, 0.0f),
 
+    glm::vec3(-0.2f, 0.88f, 0.0f), //15
+    glm::vec3(-0.2f, 0.83f, 0.0f),
+
+
+
+
+
+   glm::vec3(0.6f, -0.22f, 0.0f),  //8**
+   glm::vec3(0.55f, -0.22f, 0.0f),
+
+   glm::vec3(0.5f, -0.65f, 0.0f),  //10**
+   glm::vec3(0.5f, -0.75f, 0.0f),
+   glm::vec3(0.6f, -0.65f, 0.0f),
+   glm::vec3(0.6f, -0.75f, 0.0f),
+
+   glm::vec3(0.22f, -0.35f, 0.0f),  //12*
+   glm::vec3(0.22f, -0.45f, 0.0f),
+   glm::vec3(0.3f, -0.35f, 0.0f),
+   glm::vec3(0.3f, -0.45f, 0.0f),
+
+   glm::vec3(0.5f, 0.24f, 0.0f),  //3*
+   glm::vec3(0.5f, 0.15f, 0.0f),
+   glm::vec3(0.6f, 0.24f, 0.0f),
+   glm::vec3(0.6f, 0.15f, 0.0f),
+
+   glm::vec3(0.22f, 0.24f, 0.0f),  //2*
+   glm::vec3(0.22f, 0.05f, 0.0f),
+
+   glm::vec3(0.22f, 0.7f, 0.0f),  //1*
+   glm::vec3(0.22f, 0.55f, 0.0f),
+
+   glm::vec3(0.4f, 0.85f, 0.0f),  //111
+   glm::vec3(0.4f, 0.8f, 0.0f),
+   glm::vec3(0.5f, 0.8f, 0.0f),
+   glm::vec3(0.22f, 0.85f, 0.0f),
+   glm::vec3(0.22f, 0.8f, 0.0f),
+
+   glm::vec3(0.75f, 0.85f, 0.0f),  //4*
+   glm::vec3(0.75f, 0.8f, 0.0f),
+   glm::vec3(0.9f, 0.85f, 0.0f),
+   glm::vec3(0.9f, 0.8f, 0.0f),
+
+   glm::vec3(0.9f, 0.7f, 0.0f),  //5*
+
+   glm::vec3(0.78f, 0.45f, 0.0f),  //6*
+   glm::vec3(0.78f, 0.5f, 0.0f),
+   glm::vec3(0.9f, 0.45f, 0.0f),
+   glm::vec3(0.9f, 0.5f, 0.0f),
+
+
+   glm::vec3(0.85f, 0.1f, 0.0f),  //7*
+
+   glm::vec3(0.85f, -0.2f, 0.0f),  //8*
+
+   glm::vec3(0.82f, -0.45f, 0.0f),  //9*
+   glm::vec3(0.82f, -0.48f, 0.0f),
+
+   glm::vec3(0.9f, -0.7f, 0.0f),   //10*
+   glm::vec3(0.9f, -0.8f, 0.0f),
+
+   glm::vec3(0.85f, -0.88f, 0.0f),   //11*
+
 };
 
+glm::vec3 keyPosition;
+
 glm::vec3 characterPosition(-0.7f, 0.7f, 0.0f);
-const float characterSpeed = 0.001f;
+const float characterSpeed = 0.0001f;
 
-glm::vec3 enemyPosition(0.0f, 0.0f, 0.0f);
-const float enemySpeed = 0.001f;
+glm::vec3 enemyPosition(-0.7f, -0.7f, 0.0f);
+const float enemySpeed = 0.0001f;
 
+glm::vec3 enemy2Position(0.7f, 0.7f, 0.0f); 
+const float enemy2Speed = 0.0001f;
+
+glm::vec3 ghostPosition(0.7f, -0.7, 0.0f); 
+const float ghostSpeed = 0.00005f;
+
+bool isCharacterVisible = true;  
 bool gameOver = false;
 bool isStartPage = true;
 
@@ -99,23 +185,18 @@ void drawAndTransformCharacter(GLuint shader, GLuint VAO, glm::vec3 squarePositi
 
 }
 
-
-// function to load the background texture
+// function for backgrounds
 GLuint loadTexture(const char* filepath) {
     stbi_set_flip_vertically_on_load(true);
 
     int width, height, nrChannels;
     unsigned char* data = stbi_load(filepath, &width, &height, &nrChannels, 0);
-    if (!data) {
-        std::cerr << "Failed to load the background" << std::endl;
-        return 0;
-    }
-
+   
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, nrChannels == 4 ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, nrChannels == 4 ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, data); 
     glGenerateMipmap(GL_TEXTURE_2D);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -127,10 +208,49 @@ GLuint loadTexture(const char* filepath) {
     return texture;
 }
 
+bool isCharacterorEnemyInWater(const glm::vec3& position) {
+    // long river
+    float water1X = -0.1f;
+    float water1Y = -0.9f;
+    float water1Width = 0.25f;
+    float water1Height = 1.9f;
+
+    // shorter river
+    float water1aX = -0.1f;
+    float water1aY = -0.9f;
+    float water1aWidth = 0.32f;
+    float water1aHeight = 0.3f;
+
+    // vertical short river
+    float water2X = -0.66f;
+    float water2Y = -0.57f;
+    float water2Width = 0.14f;
+    float water2Height = 0.37f;
+
+    // horizontal short river
+    float water3X = -0.52f;
+    float water3Y = -0.57f;
+    float water3Width = 0.35f;
+    float water3Height = 0.13f;
+
+    bool inFirstWater = (position.x > water1X && position.x < water1X + water1Width &&
+        position.y > water1Y && position.y < water1Y + water1Height);
+
+    bool inFirstaWater = (position.x > water1aX && position.x < water1aX + water1aWidth &&
+        position.y > water1aY && position.y < water1aY + water1aHeight);
+
+    bool inSecondWater = (position.x > water2X && position.x < water2X + water2Width &&
+        position.y > water2Y && position.y < water2Y + water2Height);
+
+    bool inThirdWater = (position.x > water3X && position.x < water3X + water3Width &&
+        position.y > water3Y && position.y < water3Y + water3Height);
+
+    return inFirstWater || inFirstaWater || inSecondWater || inThirdWater;
+}
+
 bool checkCollision(const glm::vec3& playerPos, const glm::vec3& staticPos, float size) {
     float halfSize = size / 2.0f;
 
-    // Check if the player's square intersects with the static square
     return (playerPos.x + halfSize > staticPos.x - halfSize &&
         playerPos.x - halfSize < staticPos.x + halfSize &&
         playerPos.y + halfSize > staticPos.y - halfSize &&
@@ -152,8 +272,10 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                 gameOver = false;
                 isStartPage = true;
 
-                characterPosition = glm::vec3(-0.7f, 0.7f, 0.0f);
-                enemyPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+                characterPosition = glm::vec3(-0.7f, 0.7f, 0.0f);;
+                enemyPosition = glm::vec3(-0.7f, -0.7f, 0.0f);
+				enemy2Position = glm::vec3(0.7f, 0.7f, 0.0f);
+                ghostPosition = glm::vec3(0.7f, -0.7, 0.0f);
             }
         }
     }
@@ -164,15 +286,16 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                 isStartPage = false;
                 gameOver = false;
 
-                characterPosition = glm::vec3(-0.7f, 0.7f, 0.0f);
-                enemyPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+                characterPosition = glm::vec3(-0.7f, 0.7f, 0.0f);;
+                enemyPosition = glm::vec3(-0.7f, -0.7f, 0.0f);
+                enemy2Position = glm::vec3(0.7f, 0.7f, 0.0f);
+                ghostPosition = glm::vec3(0.7f, -0.7, 0.0f);
             }
         }
     }
 }
 
 
-// function to process the movements of the square
 void processMovements(GLFWwindow* window) {
     glm::vec3 newPosition = characterPosition;
 
@@ -187,25 +310,81 @@ void processMovements(GLFWwindow* window) {
 
     for (const auto& buildingPos : positions) {
         if (checkCollision(newPosition, buildingPos, 0.1f)) {
-            return; // Cancel movement on collision
+            return;
         }
     }
+
+	// to keep the character inside the window
+    if (newPosition.x > 1.0f) newPosition.x = 1.0f;
+    if (newPosition.x < -1.0f) newPosition.x = -1.0f;
+    if (newPosition.y > 1.0f) newPosition.y = 1.0f;
+    if (newPosition.y < -1.0f) newPosition.y = -1.0f;
 
     characterPosition = newPosition;
 }
 
-
-// function to make the enemy follow the character
-void enemyFollow(glm::vec3& enemyPosition, const glm::vec3& characterPosition, float enemySpeed) {
+void enemyFollow(glm::vec3& enemyPosition, const glm::vec3& characterPosition, float enemySpeed, const glm::vec3* obstacles, size_t obstacleCount, float obstacleSize) {
     glm::vec3 direction = characterPosition - enemyPosition;
-    float length = sqrt(direction.x * direction.x + direction.y * direction.y);
+    float length = glm::length(direction);
+
     if (length > 0.0f) {
-        direction /= length;
-        enemyPosition += direction * enemySpeed;
+        direction /= length; 
+
+        glm::vec3 nextPosition = enemyPosition + direction * enemySpeed;
+
+        bool collisionDetected = false;
+        bool inWater = isCharacterorEnemyInWater(nextPosition);
+
+        for (size_t i = 0; i < obstacleCount; ++i) {
+            if (checkCollision(nextPosition, obstacles[i], obstacleSize)) {
+                collisionDetected = true;
+                break;
+            }
+        }
+
+        if (collisionDetected || inWater) {
+            float avoidDistance = enemySpeed * 1.5f;
+			glm::vec3 avoidDirection1 = glm::normalize(glm::vec3(-direction.y, direction.x, 0.0f)); // 90 degrees 
+			glm::vec3 avoidDirection2 = glm::normalize(glm::vec3(direction.y, -direction.x, 0.0f)); // -90 degrees
+
+            glm::vec3 alternativePosition1 = enemyPosition + avoidDirection1 * avoidDistance;
+            glm::vec3 alternativePosition2 = enemyPosition + avoidDirection2 * avoidDistance;
+
+            bool collision1 = false, collision2 = false;
+
+            for (size_t i = 0; i < obstacleCount; ++i) {
+                if (checkCollision(alternativePosition1, obstacles[i], obstacleSize) || isCharacterorEnemyInWater(alternativePosition1)) {
+                    collision1 = true;
+                }
+                if (checkCollision(alternativePosition2, obstacles[i], obstacleSize) || isCharacterorEnemyInWater(alternativePosition2)) {
+                    collision2 = true;
+                }
+            }
+
+            if (!collision1) {
+                enemyPosition = alternativePosition1;
+            }
+            else if (!collision2) {
+                enemyPosition = alternativePosition2;
+            }
+        }
+        else {
+            enemyPosition = nextPosition;
+        }
     }
 }
 
-// function to check if the enemy caught the character
+void ghostFollow(glm::vec3& ghostPosition, const glm::vec3& characterPosition, float ghostSpeed) {
+    glm::vec3 direction = characterPosition - ghostPosition;
+    float length = glm::length(direction);
+
+    if (length > 0.0f) {
+        direction /= length; 
+        ghostPosition += direction * ghostSpeed; 
+    }
+}
+
+
 void checkIfEnemyCaughtCharacter(const glm::vec3& enemyPosition, const glm::vec3& characterPosition) {
     float distance = sqrt((enemyPosition.x - characterPosition.x) * (enemyPosition.x - characterPosition.x) +
         (enemyPosition.y - characterPosition.y) * (enemyPosition.y - characterPosition.y));
@@ -214,7 +393,38 @@ void checkIfEnemyCaughtCharacter(const glm::vec3& enemyPosition, const glm::vec3
     }
 }
 
-int main(void)
+glm::vec3 getRandomPosition(float minX, float maxX, float minY, float maxY) {
+    float x = minX + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (maxX - minX)));
+    float y = minY + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (maxY - minY)));
+    return glm::vec3(x, y, 0.0f);
+}
+
+
+glm::vec3 getRandomKeyPosition(float minX, float maxX, float minY, float maxY) {
+    glm::vec3 newPosition;
+    bool validPosition = false;
+
+    while (!validPosition) {
+        newPosition = getRandomPosition(minX + 0.2f, maxX - 0.2f, minY + 0.2f, maxY - 0.2f);
+
+        validPosition = true;
+
+        if (isCharacterorEnemyInWater(newPosition)) {
+            validPosition = false;
+            continue;
+        }
+        // Check for collision with blocks
+        for (const auto& blockPos : positions) {
+            if (checkCollision(newPosition, blockPos, 0.1f)) {
+                validPosition = false;
+                break;
+            }
+        }
+    }
+    return newPosition;
+}
+
+int SDL_main(int argc, char* argv[]) 
 {
     // Initialise GLFW
     if (!glfwInit())
@@ -234,7 +444,7 @@ int main(void)
     glfwMakeContextCurrent(window);
 
     // Initialize GLEW
-    glewExperimental = true; // Needed for core profile
+    glewExperimental = true; 
     if (glewInit() != GLEW_OK) {
         fprintf(stderr, "Failed to initialize GLEW\n");
         glfwTerminate();
@@ -261,6 +471,20 @@ int main(void)
 
 
     glViewport(0, 0, width, height);
+
+    // Initialize SDL and SDL_mixer
+    SDL_Init(SDL_INIT_AUDIO);
+    Mix_Init(MIX_INIT_MP3);
+    Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 4096);
+
+    // Load the horror sound
+    horrorSound = Mix_LoadWAV("assets/horrorSound.wav");
+
+
+    // Play the sound in a loop
+    if (horrorSound != NULL) {
+        Mix_PlayChannel(-1, horrorSound, -1);  // -1 to play on any available channel, -1 for infinite loop
+    }
 
     // ----------------- Background -----------------
 
@@ -400,8 +624,6 @@ int main(void)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // specifies how the vertex data is structured
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // specifies how the vertex data is structured
     glEnableVertexAttribArray(0);
 
@@ -495,10 +717,8 @@ int main(void)
     glBindBuffer(GL_ARRAY_BUFFER, VBOenemy);
     glBufferData(GL_ARRAY_BUFFER, sizeof(enemyVertices), enemyVertices, GL_STATIC_DRAW);
 
-
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOenemy);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(enemyIndices), enemyIndices, GL_STATIC_DRAW);
-
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // specifies how the vertex data is structured
     glEnableVertexAttribArray(0);
@@ -510,20 +730,133 @@ int main(void)
         return -1;
     }
 
+    // ----------------- Water Blocks ------------
+
+    GLfloat waterVertices[] = {
+        // long river
+        -0.1f, 1.0f, 0.0f, 
+        0.15f, 1.0f, 0.0f,  
+        0.15f, -0.9f, 0.0f,  
+        -0.1f, -0.9f, 0.0f,  
+
+        // shorter river
+        -0.1f, -0.6f, 0.0f, 
+        0.22f, -0.6f, 0.0f,  
+        0.22f, -0.9f, 0.0f,  
+        -0.1f, -0.9f, 0.0f,
+
+        // vertical short river
+        -0.66f, -0.2f, 0.0f, 
+        -0.52f, -0.2f, 0.0f,  
+        -0.52f, -0.57f, 0.0f, 
+        -0.66f, -0.57f, 0.0f, 
+
+        // horizontal short river
+        -0.52f, -0.44f, 0.0f, 
+        -0.17f, -0.44f, 0.0f,  
+        -0.17f, -0.57f, 0.0f,  
+        -0.52f, -0.57f, 0.0f   
+    };
+
+
+
+    GLuint waterIndices[] = {
+        //long river
+        0, 1, 2,   
+        2, 3, 0,   
+
+        // shorter river
+        4, 5, 6,   
+        6, 7, 4,   
+
+        // vertical short river
+        8, 9, 10,  
+        10, 11, 8, 
+
+        // horizontal short river
+        12, 13, 14, 
+        14, 15, 12  
+    };
+
+    GLuint waterVAO, waterVBO, waterEBO;
+    glGenVertexArrays(1, &waterVAO);
+    glGenBuffers(1, &waterVBO);
+    glGenBuffers(1, &waterEBO);
+
+    glBindVertexArray(waterVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, waterVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(waterVertices), waterVertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, waterEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(waterIndices), waterIndices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    GLuint waterShader = LoadShaders("WaterVertexShader.vertexshader", "WaterFragmentShader.fragmentshader");
+    if (waterShader == 0) {
+        std::cerr << "Failed to load water shaders!" << std::endl;
+        return -1;
+    }
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// ----------------- Key ------------
+    keyPosition = glm::vec3(0.3f, 0.3f, 0.0f);
+
+    //-------------------key----------------------
+
+    float keyVertices[] = {
+        0.015f,  0.015f, 0.0f,  
+        0.015f, -0.015f, 0.0f,  
+        -0.015f, -0.015f, 0.0f, 
+        -0.015f,  0.015f, 0.0f, 
+
+        -0.009f, -0.009f, 0.0f, 
+        0.009f, -0.009f, 0.0f,  
+        0.009f, -0.06f, 0.0f,  
+        -0.009f, -0.06f, 0.0f  
+    };
+
+    unsigned int keyIndices[] = {
+        0, 1, 2,
+        2, 3, 0,
+
+        4, 5, 6,
+        6, 7, 4
+    };
+
+
+    GLuint keyVAO, keyVBO, keyEBO;
+    glGenVertexArrays(1, &keyVAO);
+    glGenBuffers(1, &keyVBO);
+    glGenBuffers(1, &keyEBO);
+
+    glBindVertexArray(keyVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, keyVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(keyVertices), keyVertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, keyEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(keyIndices), keyIndices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+
+    GLint objectColorLocation = glGetUniformLocation(waterShader, "objectColor");
+
     int colorLocation = glGetUniformLocation(characterShader, "objectColor");
 
     glfwSetMouseButtonCallback(window, mouse_button_callback);
 
-    // the main loop of the program where the window is created and the program runs
-    // any code that you want to run in the game, you have to put it inside of this loop
     while (!glfwWindowShouldClose(window)) {
-        // Check for events
-        glfwPollEvents();
-
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // Render the background
+        // Check for events
+        glfwPollEvents();
+
         glUseProgram(backgroundShader);
 
         if (isStartPage) {
@@ -542,26 +875,60 @@ int main(void)
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(6 * sizeof(GLuint)));
             }
             else {
-				processMovements(window);
-                enemyFollow(enemyPosition, characterPosition, enemySpeed);
+                processMovements(window);
+
+				enemyFollow(enemyPosition, characterPosition, enemySpeed, positions, sizeof(positions) / sizeof(glm::vec3), 0.1f);
+                enemyFollow(enemy2Position, characterPosition, enemy2Speed, positions, sizeof(positions) / sizeof(glm::vec3), 0.1f);
+                ghostFollow(ghostPosition, characterPosition, ghostSpeed);
+
+                glUseProgram(waterShader);
+                glUniform4f(objectColorLocation, 0.0f, 0.0f, 0.0f, 0.0f); // transparent water 
+                glBindVertexArray(waterVAO);
+                glDrawElements(GL_TRIANGLES, sizeof(waterIndices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
+
+                isCharacterVisible = !isCharacterorEnemyInWater(characterPosition);
+
+                if (isCharacterVisible) {
+                    glUseProgram(characterShader);
+                    glUniform3f(colorLocation, 1.0f, 1.0f, 1.0f);
+                    drawAndTransformCharacter(characterShader, VAO, characterPosition);
+                }
 
                 glUseProgram(characterShader);
-
-                glUniform3f(colorLocation, 1.0f, 1.0f, 1.0f);
-                drawAndTransformCharacter(characterShader, VAO, characterPosition);
 
                 glUniform3f(colorLocation, 0.0f, 0.0f, 0.0f);
                 drawAndTransformCharacter(characterShader, VAOenemy, enemyPosition);
 
+                glUniform3f(colorLocation, 0.0f, 0.0f, 0.0f); 
+                drawAndTransformCharacter(characterShader, VAOenemy, enemy2Position);
+
+                glUniform3f(colorLocation, 0.7f, 0.7f, 0.7f);
+                drawAndTransformCharacter(characterShader, VAOenemy, ghostPosition);
+
+                glUseProgram(characterShader);
+                glUniform3f(glGetUniformLocation(characterShader, "objectColor"), 1.0f, 1.0f, 0.0f); // Yellow color for the key
+                glBindVertexArray(keyVAO);
+                glm::mat4 transform = glm::translate(glm::mat4(1.0f), keyPosition); // Use keyPosition here
+                glUniformMatrix4fv(glGetUniformLocation(characterShader, "transform"), 1, GL_FALSE, glm::value_ptr(transform));
+                glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0); // Adjust the count to match the new indices
+
+                // Check if the key is caught by the character
+                if (checkCollision(characterPosition, keyPosition, 0.05f)) { // Use keyPosition here
+                    std::cout << "Key caught! Repositioning key." << std::endl;
+                    keyPosition = getRandomKeyPosition(-1.0f, 1.0f, -1.0f, 1.0f); // Use keyPosition here
+                }
+
+                
                 checkIfEnemyCaughtCharacter(enemyPosition, characterPosition);
+				checkIfEnemyCaughtCharacter(enemy2Position, characterPosition);
+                checkIfEnemyCaughtCharacter(ghostPosition, characterPosition);
             }
         }
 
-        // Swap buffers
         glfwSwapBuffers(window);
     }
 
-
+    // Cleanup code 
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
@@ -574,6 +941,14 @@ int main(void)
     glDeleteBuffers(1, &backgorundVBO);
     glDeleteBuffers(1, &backgorundEBO);
 
+    glDeleteVertexArrays(1, &waterVAO);
+    glDeleteBuffers(1, &waterVBO);
+    glDeleteBuffers(1, &waterEBO);
+
+    // Cleanup and close SDL_mixer
+    Mix_FreeChunk(horrorSound);
+    Mix_CloseAudio();
+    SDL_Quit();
 
     glfwTerminate(); // close the program
     return 0;
