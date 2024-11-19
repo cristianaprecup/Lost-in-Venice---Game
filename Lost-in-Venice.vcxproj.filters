@@ -33,12 +33,22 @@
     <None Include=".gitignore" />
     <None Include="BackgroundVertexShader.vertexshader" />
     <None Include="BackgroundFragmentShader.fragmentshader" />
+    <None Include="glew32.dll" />
+    <None Include="glfw3.dll" />
+    <None Include="WaterVertexShader.vertexshader" />
+    <None Include="WaterFragmentShader.fragmentshader" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\background.jpg">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="background.png">
+    <Image Include="res\background.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\game_over.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\start_page.png">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

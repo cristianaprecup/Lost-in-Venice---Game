@@ -149,6 +149,8 @@
     <None Include="glfw3.dll" />
     <None Include="SimpleFragmentShader.fragmentshader" />
     <None Include="SimpleVertexShader.vertexshader" />
+    <None Include="WaterFragmentShader.fragmentshader" />
+    <None Include="WaterVertexShader.vertexshader" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\background.jpg" />
