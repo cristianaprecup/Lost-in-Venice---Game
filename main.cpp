@@ -20,11 +20,19 @@
 
 #include "shader.hpp"
 
+// Include SDL
+#include "dependencies\SDL2_mixer-2.8.0\include\SDL_mixer.h"
+#include "dependencies\SDL2-2.30.9\include\SDL.h"
+#include "dependencies\SDL2-2.30.9\include\SDL_main.h"
+
+
+
 // global variables
 GLFWwindow* window;
 const int width = 1024, height = 1024;
 
-
+// Declare the sound variable
+Mix_Chunk* horrorSound = NULL;
 
 glm::vec3 positions[] = {
     glm::vec3(-0.53f, 0.8f, 0.0f),  //1
@@ -336,8 +344,7 @@ void checkIfEnemyCaughtCharacter(const glm::vec3& enemyPosition, const glm::vec3
     }
 }
 
-int main(void)
-{
+int SDL_main(int argc, char* argv[]) {
     // Initialise GLFW
     if (!glfwInit())
     {
@@ -363,6 +370,24 @@ int main(void)
         return -1;
     }
 
+
+    // Initialize SDL and SDL_mixer
+    SDL_Init(SDL_INIT_AUDIO);
+    Mix_Init(MIX_INIT_MP3);
+    Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 4096);
+
+    // Load the horror sound
+    horrorSound = Mix_LoadWAV("assets/horrorSound.wav");
+
+  
+    // Play the sound in a loop
+    if (horrorSound != NULL) {
+        Mix_PlayChannel(-1, horrorSound, -1);  // -1 to play on any available channel, -1 for infinite loop
+    }
+
+
+
+
     GLuint backgroundTexture = loadTexture("res/background.png");
     if (backgroundTexture == 0) {
         std::cerr << "Failed to load background" << std::endl;
@@ -380,6 +405,8 @@ int main(void)
         std::cerr << "Failed to load the start page" << std::endl;
         return -1;
     }
+
+
 
 
     glViewport(0, 0, width, height);
@@ -723,71 +750,77 @@ int main(void)
     glBindVertexArray(waterVAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-    // The main loop of the program where the window is created and the program runs
+     
     while (!glfwWindowShouldClose(window)) {
-        // Clear the screen
-        glClear(GL_COLOR_BUFFER_BIT);
 
-        // Check for events
-        glfwPollEvents();
 
-        // Render the background
-        glUseProgram(backgroundShader);
+            // Check for OpenGL events
+            glfwPollEvents();
 
-        if (isStartPage) {
-            glBindTexture(GL_TEXTURE_2D, startPage);
-            glBindVertexArray(backgorundVAO);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        }
-        else {
-            glBindTexture(GL_TEXTURE_2D, backgroundTexture);
-            glBindVertexArray(backgorundVAO);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            // Render the background
+            glUseProgram(backgroundShader);
 
-            if (gameOver) {
-                glBindTexture(GL_TEXTURE_2D, gameOverTexture);
+          
+            if (isStartPage) {
+                glBindTexture(GL_TEXTURE_2D, startPage);
                 glBindVertexArray(backgorundVAO);
-                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(6 * sizeof(GLuint)));
+                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
             }
             else {
-                processMovements(window);
-                enemyFollow(enemyPosition, characterPosition, enemySpeed);
+                glBindTexture(GL_TEXTURE_2D, backgroundTexture);
+                glBindVertexArray(backgorundVAO);
+                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-                // Render the water
-                glUseProgram(waterShader);
-                glUniform4f(objectColorLocation, 0.0f, 0.0f, 0.0f, 0.0f);  // Ensure the water is fully transparent  
-                glBindVertexArray(waterVAO);
-                glDrawElements(GL_TRIANGLES, sizeof(waterIndices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
-
-                // Update the square's visibility based on its position
-                isCharacterVisible = !isCharacterInWater();
-
-                // Render the square if it is visible
-                if (isCharacterVisible) {
-                    glUseProgram(characterShader);
-                    glBindVertexArray(VAO);
-                    glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
+                if (gameOver) {
+                    glBindTexture(GL_TEXTURE_2D, gameOverTexture);
+                    glBindVertexArray(backgorundVAO);
+                    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(6 * sizeof(GLuint)));
                 }
+                else {
+                   
 
-                // Render the character if visible
-                if (isCharacterVisible) {
-                    glUseProgram(characterShader);
-                    glUniform3f(colorLocation, 1.0f, 1.0f, 1.0f);
-                    drawAndTransformCharacter(characterShader, VAO, characterPosition);
+                    processMovements(window);
+                    enemyFollow(enemyPosition, characterPosition, enemySpeed);
+
+                    // Render the water
+                    glUseProgram(waterShader);
+                    glUniform4f(objectColorLocation, 0.0f, 0.0f, 0.0f, 0.0f);  // Ensure the water is fully transparent  
+                    glBindVertexArray(waterVAO);
+                    glDrawElements(GL_TRIANGLES, sizeof(waterIndices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
+
+                    // Update the square's visibility based on its position
+                    isCharacterVisible = !isCharacterInWater();
+
+                    // Render the square if it is visible
+                    if (isCharacterVisible) {
+                        glUseProgram(characterShader);
+                        glBindVertexArray(VAO);
+                        glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
+                    }
+
+                    // Render the character if visible
+                    if (isCharacterVisible) {
+                        glUseProgram(characterShader);
+                        glUniform3f(colorLocation, 1.0f, 1.0f, 1.0f);
+                        drawAndTransformCharacter(characterShader, VAO, characterPosition);
+                    }
+
+                    // Render the enemy
+                    glUniform3f(colorLocation, 0.0f, 0.0f, 0.0f);
+                    drawAndTransformCharacter(characterShader, VAOenemy, enemyPosition);
+
+                    // Check if the enemy caught the character
+                    checkIfEnemyCaughtCharacter(enemyPosition, characterPosition);
                 }
-
-                // Render the enemy
-                glUniform3f(colorLocation, 0.0f, 0.0f, 0.0f);
-                drawAndTransformCharacter(characterShader, VAOenemy, enemyPosition);
-
-                // Check if the enemy caught the character
-                checkIfEnemyCaughtCharacter(enemyPosition, characterPosition);
             }
+
+            // Swap buffers
+            glfwSwapBuffers(window);
+
+      
         }
 
-        // Swap buffers
-        glfwSwapBuffers(window);
-    }
+
 
     // Cleanup code remains the same
     glDeleteVertexArrays(1, &VAO);
@@ -805,6 +838,11 @@ int main(void)
     glDeleteVertexArrays(1, &waterVAO);
     glDeleteBuffers(1, &waterVBO);
     glDeleteBuffers(1, &waterEBO);
+
+    // Cleanup and close SDL_mixer
+    Mix_FreeChunk(horrorSound);
+    Mix_CloseAudio();
+    SDL_Quit();
 
     glfwTerminate(); // Close the program
     return 0;
