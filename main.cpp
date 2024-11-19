@@ -20,9 +20,19 @@
 
 #include "shader.hpp"
 
+// Include SDL
+#include "dependencies\SDL2_mixer-2.8.0\include\SDL_mixer.h"
+#include "dependencies\SDL2-2.30.9\include\SDL.h"
+#include "dependencies\SDL2-2.30.9\include\SDL_main.h"
+
+
 // global variables
 GLFWwindow* window;
-const int width = 1904, height = 1424;
+const int width = 1024, height = 1024;
+
+// Declare the sound variable
+Mix_Chunk* horrorSound = NULL;
+
 
 glm::vec3 positions[] = {
     glm::vec3(-0.53f, 0.8f, 0.0f),  //1
@@ -446,7 +456,7 @@ void checkIfCharacterGotKey(const glm::vec3& characterPosition, const glm::vec3&
     }
 }
 
-int main(int argc, char* argv[])
+int SDL_main(int argc, char* argv[])
 {
     // Initialise GLFW
     if (!glfwInit())
@@ -464,6 +474,30 @@ int main(int argc, char* argv[])
     }
 
     glfwMakeContextCurrent(window);
+
+    // Initialize GLEW
+    glewExperimental = true; // Needed for core profile
+    if (glewInit() != GLEW_OK) {
+        fprintf(stderr, "Failed to initialize GLEW\n");
+        glfwTerminate();
+        return -1;
+    }
+
+
+    // Initialize SDL and SDL_mixer
+    SDL_Init(SDL_INIT_AUDIO);
+    Mix_Init(MIX_INIT_MP3);
+    Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 4096);
+
+    // Load the horror sound
+    horrorSound = Mix_LoadWAV("assets/horrorSound.wav");
+
+
+    // Play the sound in a loop
+    if (horrorSound != NULL) {
+        Mix_PlayChannel(-1, horrorSound, -1);  // -1 to play on any available channel, -1 for infinite loop
+    }
+
 
     // Initialize GLEW
     glewExperimental = true;
@@ -955,6 +989,11 @@ int main(int argc, char* argv[])
     glDeleteVertexArrays(1, &waterVAO);
     glDeleteBuffers(1, &waterVBO);
     glDeleteBuffers(1, &waterEBO);
+
+    Mix_FreeChunk(horrorSound);
+    Mix_CloseAudio();
+    SDL_Quit();
+
 
     glfwTerminate(); // close the program
     return 0;
